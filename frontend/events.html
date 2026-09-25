@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Events — Artisan Oven</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="site-logo">ARTISAN OVEN</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="order.html">Order</a>
+        <a href="payment.html">Pay</a>
+        <a href="events.html" aria-current="page">Events</a>
+        <a href="terms.html">Terms</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <h1 style="margin-top:var(--space-xl);margin-bottom:var(--space-xs)">Special Events</h1>
+      <p class="text-muted">Private catering and special event bookings.</p>
+
+      <div id="events-list" style="margin-top:var(--space-xl)" aria-live="polite">
+        <p class="text-muted">Loading events…</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <span>© <span class="js-year"></span> Artisan Oven</span>
+        <span><a href="terms.html">Terms</a> · <a href="mailto:louis@benne.co.uk">Contact</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="site.js" defer></script>
+  <script>
+  const API = window.ORDER_API_URL || '/api';
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.querySelectorAll('.js-year').forEach(el => el.textContent = new Date().getFullYear());
+    await loadEvents();
+  });
+
+  async function loadEvents() {
+    const list = document.getElementById('events-list');
+    try {
+      const res  = await fetch(`${API}/events`);
+      const data = await res.json();
+      const events = data.events || data || [];
+
+      if (!events.length) {
+        list.innerHTML = `<p class="text-muted">No upcoming events right now. <a href="mailto:louis@benne.co.uk">Contact us</a> to enquire about private catering.</p>`;
+        return;
+      }
+
+      list.innerHTML = events.map(renderEvent).join('');
+    } catch {
+      list.innerHTML = `<p class="text-muted">Could not load events — please try again later.</p>`;
+    }
+  }
+
+  function renderEvent(ev) {
+    const date = ev.eventDate ? new Date(ev.eventDate).toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) : '';
+    return `
+      <div class="event-card" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);margin-bottom:var(--space-md)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-md);flex-wrap:wrap">
+          <div>
+            <h2 style="font-size:1.1rem;margin-bottom:var(--space-xs)">${escHtml(ev.title)}</h2>
+            ${date ? `<p class="text-sm text-muted">${date}</p>` : ''}
+            ${ev.location ? `<p class="text-sm text-muted">📍 ${escHtml(ev.location)}</p>` : ''}
+          </div>
+          ${ev.pricePerHead ? `<div style="text-align:right"><span style="font-size:1.4rem;font-weight:700">£${(ev.pricePerHead/100).toFixed(2)}</span><br><span class="text-muted text-sm">per head</span></div>` : ''}
+        </div>
+        ${ev.description ? `<p style="margin-top:var(--space-sm);font-size:.95rem">${escHtml(ev.description)}</p>` : ''}
+        ${ev.maxGuests ? `<p class="text-sm text-muted mt-sm">Max guests: ${ev.maxGuests}</p>` : ''}
+        <div style="margin-top:var(--space-md);display:flex;gap:var(--space-sm);flex-wrap:wrap">
+          ${ev.orderingOpen
+            ? `<a href="event-order.html?event=${ev.eventId}" class="btn btn-forest btn-sm">Book a place</a>`
+            : `<span class="badge badge-muted">Booking closed</span>`
+          }
+        </div>
+      </div>`;
+  }
+
+  function escHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  </script>
+</body>
+</html>

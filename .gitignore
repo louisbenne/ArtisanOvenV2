@@ -1,0 +1,26 @@
+node_modules/
+.env
+*.env.local
+*.log
+npm-debug.log*
+
+# Build artifacts
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Docker volumes
+postgres-data/
+redis-data/
+
+# Backups
+backups/
+*.sql.gz

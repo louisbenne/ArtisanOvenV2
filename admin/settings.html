@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings — Artisan Oven Admin</title>
+  <link rel="stylesheet" href="admin-shell.css">
+  <link rel="manifest" href="admin-manifest.json">
+</head>
+<body>
+<script>window.ADMIN_PAGE = 'settings';</script>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar" aria-label="Admin navigation">
+    <div class="sidebar-logo">🍕 ARTISAN OVEN<small>Admin</small><span class="role-badge js-admin-role"></span></div>
+    <nav class="sidebar-nav" aria-label="Admin pages">
+      <a href="index.html"    data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+      <a href="orders.html"   data-page="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Orders</a>
+      <a href="kitchen.html"  data-page="kitchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Kitchen</a>
+      <a href="events.html"   data-page="events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Events</a>
+      <a href="money.html"    data-page="money" data-min-role="treasurer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v1m0 8v1M9.5 9.5C9.5 8.7 10.6 8 12 8s2.5.7 2.5 1.5S13.4 11 12 11s-2.5.7-2.5 1.5S10.6 16 12 16s2.5-.7 2.5-1.5"/></svg>Money</a>
+      <a href="comms.html"    data-page="comms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Comms</a>
+      <a href="settings.html" data-page="settings" data-min-role="owner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="../frontend/index.html" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View site</a>
+      <a href="#" id="logout-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Log out</a>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">☰</button>
+      <h1>Settings</h1>
+      <span class="text-sm text-muted">Hi, <span class="js-admin-user"></span></span>
+    </header>
+
+    <div class="admin-content">
+
+      <!-- Site settings -->
+      <div class="card" style="margin-bottom:var(--space-xl)">
+        <p class="card-title">Site settings</p>
+        <form id="site-settings-form">
+          <div class="form-group">
+            <label for="site-name">Site name</label>
+            <input type="text" id="site-name" placeholder="Artisan Oven">
+          </div>
+          <div class="form-group">
+            <label for="site-tagline">Tagline</label>
+            <input type="text" id="site-tagline">
+          </div>
+          <div class="form-group">
+            <label for="site-paypal-me">PayPal.Me link</label>
+            <input type="url" id="site-paypal-me" placeholder="https://paypal.me/yourname">
+          </div>
+          <div class="form-group">
+            <label for="site-wa-number">WhatsApp number (international format)</label>
+            <input type="tel" id="site-wa-number" placeholder="+447911123456">
+          </div>
+          <div id="settings-feedback" class="hidden mt-sm"></div>
+          <button type="submit" class="btn btn-forest btn-sm mt-md">Save settings</button>
+        </form>
+      </div>
+
+      <!-- Discount codes -->
+      <div class="card" style="margin-bottom:var(--space-xl)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+          <p class="card-title" style="margin:0">Discount codes</p>
+          <button class="btn btn-outline btn-sm" id="new-discount-btn">+ New</button>
+        </div>
+        <div id="discount-list"><p class="text-muted text-sm">Loading…</p></div>
+      </div>
+
+      <!-- Admin users (owner only) -->
+      <div class="card" data-min-role="owner" style="margin-bottom:var(--space-xl)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md)">
+          <p class="card-title" style="margin:0">Admin users</p>
+          <button class="btn btn-outline btn-sm" id="new-user-btn">+ New user</button>
+        </div>
+        <div id="users-list"><p class="text-muted text-sm">Loading…</p></div>
+      </div>
+
+      <!-- Audit log -->
+      <div class="card" data-min-role="owner">
+        <p class="card-title">Audit log</p>
+        <div id="audit-log" style="max-height:300px;overflow-y:auto"><p class="text-muted text-sm">Loading…</p></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Discount modal -->
+<dialog id="discount-modal" style="border:none;border-radius:var(--radius-lg);padding:var(--space-xl);max-width:400px;width:90%">
+  <h2 style="margin-bottom:var(--space-lg)">Discount Code</h2>
+  <form id="discount-form">
+    <input type="hidden" id="dc-id">
+    <div class="form-group">
+      <label for="dc-code">Code *</label>
+      <input type="text" id="dc-code" required style="text-transform:uppercase" placeholder="e.g. STMSCS">
+    </div>
+    <div class="form-group">
+      <label for="dc-type">Type *</label>
+      <select id="dc-type" required>
+        <option value="percent">Percentage</option>
+        <option value="fixed">Fixed (pence)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="dc-value">Value *</label>
+      <input type="number" id="dc-value" required min="1" placeholder="e.g. 15 for 15% or 200 for £2">
+    </div>
+    <div class="form-group">
+      <label for="dc-max">Max uses (blank = unlimited)</label>
+      <input type="number" id="dc-max" min="1">
+    </div>
+    <div class="form-group">
+      <label for="dc-expires">Expires at (blank = never)</label>
+      <input type="datetime-local" id="dc-expires">
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;gap:var(--space-sm)">
+      <input type="checkbox" id="dc-active" checked style="margin:0">
+      <label for="dc-active" style="margin:0;font-weight:400;cursor:pointer">Active</label>
+    </div>
+    <div class="flex gap-sm mt-lg" style="justify-content:flex-end">
+      <button type="button" class="btn btn-outline" id="cancel-dc-btn">Cancel</button>
+      <button type="submit" class="btn btn-forest">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- User modal -->
+<dialog id="user-modal" style="border:none;border-radius:var(--radius-lg);padding:var(--space-xl);max-width:400px;width:90%">
+  <h2 style="margin-bottom:var(--space-lg)" id="user-modal-title">New Admin User</h2>
+  <form id="user-form">
+    <input type="hidden" id="usr-id">
+    <div class="form-group">
+      <label for="usr-username">Username *</label>
+      <input type="text" id="usr-username" required autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="usr-display">Display name</label>
+      <input type="text" id="usr-display">
+    </div>
+    <div class="form-group">
+      <label for="usr-role">Role *</label>
+      <select id="usr-role" required>
+        <option value="volunteer">Volunteer</option>
+        <option value="kitchen">Kitchen</option>
+        <option value="treasurer">Treasurer</option>
+        <option value="owner">Owner</option>
+      </select>
+    </div>
+    <div class="form-group" id="usr-pw-wrap">
+      <label for="usr-password">Password</label>
+      <input type="password" id="usr-password" autocomplete="new-password">
+      <span class="form-hint">Leave blank to keep existing password (edit mode).</span>
+    </div>
+    <div class="flex gap-sm mt-lg" style="justify-content:flex-end">
+      <button type="button" class="btn btn-outline" id="cancel-usr-btn">Cancel</button>
+      <button type="submit" class="btn btn-forest">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="admin-shell.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const { apiGet, apiPost, apiPatch } = window.aoAdmin;
+
+  /* ── Site settings ─────────────────────────────────────────────────────────── */
+  async function loadSiteSettings() {
+    const data = await apiGet('/admin/settings');
+    document.getElementById('site-name').value      = data.site_name || '';
+    document.getElementById('site-tagline').value   = data.site_tagline || '';
+    document.getElementById('site-paypal-me').value = data.paypal_me_url || '';
+    document.getElementById('site-wa-number').value = data.whatsapp_number || '';
+  }
+
+  document.getElementById('site-settings-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const fb   = document.getElementById('settings-feedback');
+    const data = await apiPatch('/admin/settings', {
+      site_name:      document.getElementById('site-name').value.trim(),
+      site_tagline:   document.getElementById('site-tagline').value.trim(),
+      paypal_me_url:  document.getElementById('site-paypal-me').value.trim(),
+      whatsapp_number: document.getElementById('site-wa-number').value.trim(),
+    });
+    fb.className  = `alert ${data.success ? 'alert-success' : 'alert-error'} mt-sm`;
+    fb.textContent = data.success ? 'Settings saved.' : (data.message || 'Failed to save.');
+    fb.classList.remove('hidden');
+  });
+
+  /* ── Discount codes ─────────────────────────────────────────────────────────── */
+  async function loadDiscounts() {
+    const data = await apiGet('/admin/settings/discounts');
+    const el   = document.getElementById('discount-list');
+    const codes = data.codes || data || [];
+    if (!codes.length) { el.innerHTML = '<p class="text-muted text-sm">No codes.</p>'; return; }
+    el.innerHTML = `<table class="data-table">
+      <thead><tr><th>Code</th><th>Type</th><th>Value</th><th>Uses</th><th>Active</th><th></th></tr></thead>
+      <tbody>${codes.map(c => `
+        <tr>
+          <td><strong>${escHtml(c.code)}</strong></td>
+          <td>${escHtml(c.type)}</td>
+          <td>${c.type === 'percent' ? c.value + '%' : '£' + (c.value/100).toFixed(2)}</td>
+          <td>${c.usageCount ?? 0}${c.maxUses ? ' / ' + c.maxUses : ''}</td>
+          <td>${c.active ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-muted">No</span>'}</td>
+          <td><button class="btn btn-outline btn-sm edit-dc-btn" data-id="${c.codeId || c.code}">Edit</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  }
+
+  document.getElementById('new-discount-btn').addEventListener('click', () => {
+    document.getElementById('dc-id').value = '';
+    document.getElementById('discount-form').reset();
+    document.getElementById('dc-active').checked = true;
+    document.getElementById('discount-modal').showModal();
+  });
+  document.getElementById('cancel-dc-btn').addEventListener('click', () => document.getElementById('discount-modal').close());
+
+  document.addEventListener('click', async e => {
+    const edit = e.target.closest('.edit-dc-btn');
+    if (edit) {
+      const data = await apiGet(`/admin/settings/discounts/${edit.dataset.id}`);
+      document.getElementById('dc-id').value      = data.codeId || data.code;
+      document.getElementById('dc-code').value    = data.code;
+      document.getElementById('dc-type').value    = data.type;
+      document.getElementById('dc-value').value   = data.value;
+      document.getElementById('dc-max').value     = data.maxUses || '';
+      document.getElementById('dc-expires').value = data.expiresAt ? data.expiresAt.slice(0,16) : '';
+      document.getElementById('dc-active').checked = !!data.active;
+      document.getElementById('discount-modal').showModal();
+    }
+  });
+
+  document.getElementById('discount-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = document.getElementById('dc-id').value;
+    const body = {
+      code:      document.getElementById('dc-code').value.trim().toUpperCase(),
+      type:      document.getElementById('dc-type').value,
+      value:     parseInt(document.getElementById('dc-value').value, 10),
+      maxUses:   parseInt(document.getElementById('dc-max').value, 10) || null,
+      expiresAt: document.getElementById('dc-expires').value || null,
+      active:    document.getElementById('dc-active').checked,
+    };
+    const data = id
+      ? await apiPatch(`/admin/settings/discounts/${id}`, body)
+      : await apiPost('/admin/settings/discounts', body);
+    if (data.success || data.code) { document.getElementById('discount-modal').close(); loadDiscounts(); }
+    else alert(data.message);
+  });
+
+  /* ── Admin users ─────────────────────────────────────────────────────────────── */
+  async function loadUsers() {
+    const data  = await apiGet('/admin/users');
+    const users = data.users || data || [];
+    const el    = document.getElementById('users-list');
+    el.innerHTML = `<table class="data-table">
+      <thead><tr><th>Username</th><th>Display name</th><th>Role</th><th></th></tr></thead>
+      <tbody>${users.map(u => `
+        <tr>
+          <td>${escHtml(u.username)}</td>
+          <td>${escHtml(u.displayName || '—')}</td>
+          <td><span class="badge badge-muted">${escHtml(u.role)}</span></td>
+          <td><button class="btn btn-outline btn-sm edit-usr-btn" data-id="${u.userId}">Edit</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  }
+
+  document.getElementById('new-user-btn').addEventListener('click', () => {
+    document.getElementById('usr-id').value = '';
+    document.getElementById('user-form').reset();
+    document.getElementById('user-modal-title').textContent = 'New Admin User';
+    document.getElementById('usr-pw-wrap').querySelector('.form-hint').style.display = 'none';
+    document.getElementById('user-modal').showModal();
+  });
+  document.getElementById('cancel-usr-btn').addEventListener('click', () => document.getElementById('user-modal').close());
+
+  document.addEventListener('click', async e => {
+    const edit = e.target.closest('.edit-usr-btn');
+    if (edit) {
+      const data = await apiGet(`/admin/users/${edit.dataset.id}`);
+      document.getElementById('usr-id').value       = data.userId;
+      document.getElementById('usr-username').value = data.username;
+      document.getElementById('usr-display').value  = data.displayName || '';
+      document.getElementById('usr-role').value     = data.role;
+      document.getElementById('usr-pw-wrap').querySelector('.form-hint').style.display = '';
+      document.getElementById('user-modal-title').textContent = 'Edit User';
+      document.getElementById('user-modal').showModal();
+    }
+  });
+
+  document.getElementById('user-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = document.getElementById('usr-id').value;
+    const body = {
+      username:    document.getElementById('usr-username').value.trim(),
+      displayName: document.getElementById('usr-display').value.trim() || null,
+      role:        document.getElementById('usr-role').value,
+      password:    document.getElementById('usr-password').value || undefined,
+    };
+    const data = id
+      ? await apiPatch(`/admin/users/${id}`, body)
+      : await apiPost('/admin/users', body);
+    if (data.success || data.userId) { document.getElementById('user-modal').close(); loadUsers(); }
+    else alert(data.message);
+  });
+
+  /* ── Audit log ─────────────────────────────────────────────────────────────── */
+  async function loadAuditLog() {
+    const data = await apiGet('/admin/audit');
+    const rows = data.rows || data || [];
+    const el   = document.getElementById('audit-log');
+    if (!rows.length) { el.innerHTML = '<p class="text-muted text-sm">No audit log entries.</p>'; return; }
+    el.innerHTML = `<table class="data-table" style="font-size:.8rem">
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Target</th></tr></thead>
+      <tbody>${rows.map(r => `
+        <tr>
+          <td class="text-muted">${new Date(r.createdAt).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'})}</td>
+          <td>${escHtml(r.username || r.adminUserId || '—')}</td>
+          <td>${escHtml(r.action)}</td>
+          <td>${escHtml(r.targetTable || '')} ${escHtml(r.targetId || '')}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  }
+
+  loadSiteSettings();
+  loadDiscounts();
+  if (window.aoAdmin.hasRole('owner')) { loadUsers(); loadAuditLog(); }
+});
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
