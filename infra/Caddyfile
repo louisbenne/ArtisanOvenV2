@@ -1,0 +1,37 @@
+artisanoven.shop {
+    # API — proxied to the backend container
+    handle /api/* {
+        reverse_proxy backend:3000
+    }
+
+    # Admin SPA
+    # Files live at /srv/admin/; the path /admin/* maps directly.
+    handle /admin* {
+        root * /srv
+        file_server
+        try_files {path} /admin/index.html
+    }
+
+    # /frontend/* path alias — needed so admin CSS can resolve
+    # @import '../frontend/style.css' as /frontend/style.css.
+    handle /frontend/* {
+        root * /srv
+        file_server
+    }
+
+    # Public frontend (served at root)
+    handle {
+        root * /srv/frontend
+        file_server
+        try_files {path} /index.html
+    }
+
+    encode gzip zstd
+
+    header {
+        X-Frame-Options        DENY
+        X-Content-Type-Options nosniff
+        Referrer-Policy        strict-origin-when-cross-origin
+        -Server
+    }
+}

@@ -18,20 +18,6 @@ services:
       retries: 5
     networks: [internal]
 
-  # ── Redis (job queue + Socket.IO adapter) ────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command: redis-server --save 60 1 --loglevel warning
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks: [internal]
-
   # ── Backend API ───────────────────────────────────────────────────────────────
   backend:
     build:
@@ -40,37 +26,28 @@ services:
     restart: unless-stopped
     env_file: ../.env
     environment:
-      DB_HOST:   db
-      DB_PORT:   "5432"
-      REDIS_URL: redis://redis:6379
+      DB_HOST: db
+      DB_PORT: "5432"
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
     networks: [internal, web]
-    labels:
-      caddy: artisanoven.shop
-      caddy.handle_path: /api/*
-      caddy.handle_path.reverse_proxy: backend:3000
 
-  # ── Caddy (reverse proxy + auto HTTPS) ───────────────────────────────────────
+  # ── Caddy (reverse proxy + auto HTTPS + static files) ────────────────────────
   caddy:
-    image: lucaslorentz/caddy-docker-proxy:latest
+    image: caddy:2-alpine
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ../frontend:/srv/frontend:ro
       - ../admin:/srv/admin:ro
+      - caddy_data:/data
+      - caddy_config:/config
     networks: [web]
-    environment:
-      CADDY_INGRESS_NETWORKS: web
 
   # ── Nightly backup ────────────────────────────────────────────────────────────
   backup:
@@ -95,7 +72,6 @@ networks:
 
 volumes:
   db_data:
-  redis_data:
   caddy_data:
   caddy_config:
   backup_data:

@@ -147,6 +147,16 @@ async function create(req, res) {
   // Notify asynchronously (don't block the response on email/WhatsApp delivery).
   notifyOrder('order_confirmation', result.order.id).catch(console.error);
 
+  // Broadcast to connected kitchen / admin boards.
+  const io = req.app.get('io');
+  if (io) {
+    io.broadcastOrderUpdate('order:new', {
+      orderId:   result.order.public_order_code,
+      orderType: result.order.order_type,
+      sessionId: result.order.session_id,
+    });
+  }
+
   res.status(201).json({
     success:    true,
     orderId:    result.order.public_order_code,
@@ -210,24 +220,25 @@ async function lookup(req, res) {
   res.json({
     success: true,
     order: {
-      id:            order.public_order_code,
-      customerName:  order.customer_name,
-      customerEmail: order.customer_email,
-      items:         items.map(i => ({
+      orderId:         order.public_order_code,
+      customerName:    order.customer_name,
+      customerEmail:   order.customer_email,
+      items:           items.map(i => ({
         childName:  i.child_name,
         childClass: i.child_class,
         size:       i.size,
-        price:      i.unit_price_pence / 100,
+        topping:    i.topping,
+        pricePence: i.unit_price_pence,
       })),
-      subtotal:       order.subtotal_pence / 100,
-      discountCode:   order.discount_code,
-      discount:       order.discount_pence / 100,
-      total:          order.total_pence / 100,
-      amountPaid:     parseInt(paid[0].total, 10) / 100,
-      paymentMethod:  order.payment_method,
-      paymentStatus:  order.payment_status,
-      allergyFlag:    order.allergy_flag,
-      notes:          order.notes,
+      subtotalPence:   order.subtotal_pence,
+      discountCode:    order.discount_code,
+      discountPence:   order.discount_pence,
+      totalPence:      order.total_pence,
+      amountPaidPence: parseInt(paid[0].total, 10),
+      paymentMethod:   order.payment_method,
+      paymentStatus:   order.payment_status,
+      allergyFlag:     order.allergy_flag,
+      notes:           order.notes,
     },
   });
 }

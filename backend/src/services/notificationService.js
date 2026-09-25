@@ -4,13 +4,14 @@
 // All sends are logged to message_log. Failures are caught and logged; they
 // never bubble up to fail the order-creation request.
 
-const sql = require('../db');
+const https    = require('https');
+const sql      = require('../db');
 
 async function notifyOrder(template, orderId) {
   const [order] = await sql`
     SELECT
-      o.id, o.public_order_code, o.order_type, o.total_pence,
-      o.payment_method, o.access_token, o.discount_pence, o.allergy_notes,
+      o.id, o.public_order_code, o.order_type, o.total_pence, o.discount_pence,
+      o.discount_code, o.payment_method, o.access_token, o.allergy_notes,
       c.name  AS customer_name,
       c.email AS customer_email,
       c.phone_e164,
@@ -22,7 +23,7 @@ async function notifyOrder(template, orderId) {
   if (!order) return;
 
   const items = await sql`
-    SELECT size, child_name, child_class, unit_price_pence
+    SELECT size, topping, child_name, child_class, unit_price_pence
     FROM   order_items
     WHERE  order_id = ${orderId}
     ORDER  BY id
@@ -46,8 +47,9 @@ async function notifyOrder(template, orderId) {
   }
 }
 
+// ── Email ─────────────────────────────────────────────────────────────────────
+
 async function sendEmail({ order, items, template }) {
-  // Nodemailer / SMTP — wired up in Phase 4. Stub logs intent for now.
   const transporter = getTransporter();
   if (!transporter) {
     console.log(`[email-stub] Would send "${template}" to ${order.customer_email}`);
@@ -61,24 +63,8 @@ async function sendEmail({ order, items, template }) {
     to:      order.customer_email,
     subject,
     html,
-    text:    html.replace(/<[^>]+>/g, ''),
+    text:    html.replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim(),
   });
-}
-
-async function sendWhatsApp({ order, template }) {
-  // Meta WhatsApp Cloud API — wired up in Phase 4.
-  if (!process.env.WHATSAPP_TOKEN) {
-    console.log(`[whatsapp-stub] Would send "${template}" to ${order.phone_e164}`);
-    return;
-  }
-  // TODO: Phase 4 — call Meta Graph API with approved template.
-}
-
-async function logMessage({ orderId, channel, template, status, error }) {
-  await sql`
-    INSERT INTO message_log (order_id, channel, template, status, error)
-    VALUES (${orderId}, ${channel}, ${template}, ${status}, ${error ?? null})
-  `.catch(() => {});  // never throw from logging
 }
 
 function getTransporter() {
@@ -94,64 +80,163 @@ function getTransporter() {
 
 function emailSubject(template, order) {
   const titles = {
-    order_confirmation: `Your Artisan Oven Order Confirmation (${order.public_order_code})`,
-    payment_reminder:   `Artisan Oven — Payment Reminder (${order.public_order_code})`,
-    ready_for_collection: `Your Artisan Oven Pizza is Ready! (${order.public_order_code})`,
+    order_confirmation:   `Your order is confirmed — ${order.public_order_code} · Artisan Oven`,
+    payment_reminder:     `Friendly payment reminder — ${order.public_order_code} · Artisan Oven`,
+    ready_for_collection: `Your pizza is ready! — ${order.public_order_code} · Artisan Oven`,
   };
   return titles[template] || `Artisan Oven — ${order.public_order_code}`;
 }
 
 function emailHtml(template, order, items) {
-  const PAYMENT_DOMAIN = process.env.FRONTEND_URL || 'https://artisanoven.shop';
-  const viewLink = `${PAYMENT_DOMAIN}/payment.html?order=${order.public_order_code}&token=${order.access_token}`;
+  const BASE   = process.env.FRONTEND_URL || 'https://artisanoven.shop';
+  const viewLink = `${BASE}/payment.html?q=${order.public_order_code}&token=${order.access_token}`;
+  const SIZE_LABEL = { '12inch': 'Whole 12"', 'Half12inch': 'Half 12"', 'Quarter12inch': 'Quarter 12"' };
 
-  const itemRows = items.map(i => {
-    const label = { '12inch': 'Whole 12"', 'Half12inch': 'Half 12"', 'Quarter12inch': 'Quarter 12"' }[i.size];
-    return `<tr>
-      <td>${i.child_name || '—'}</td>
-      <td>${i.child_class || '—'}</td>
-      <td>${label}</td>
-      <td>£${(i.unit_price_pence / 100).toFixed(2)}</td>
-    </tr>`;
-  }).join('');
+  const itemRows = items.map(i =>
+    `<tr>
+      <td style="padding:8px;border-bottom:1px solid #e8e4de">${escHtml(i.topping || '—')}</td>
+      <td style="padding:8px;border-bottom:1px solid #e8e4de">${SIZE_LABEL[i.size] || i.size}</td>
+      <td style="padding:8px;border-bottom:1px solid #e8e4de">${escHtml(i.child_name || '—')}</td>
+      <td style="padding:8px;border-bottom:1px solid #e8e4de;text-align:right">£${(i.unit_price_pence/100).toFixed(2)}</td>
+    </tr>`
+  ).join('');
+
+  const discountRow = order.discount_pence
+    ? `<tr><td colspan="3" style="padding:8px;color:#888">Discount (${escHtml(order.discount_code || '')})</td><td style="padding:8px;text-align:right;color:#888">−£${(order.discount_pence/100).toFixed(2)}</td></tr>`
+    : '';
+
+  const bodyMap = {
+    order_confirmation:
+      `<p>Hi ${escHtml(order.customer_name)},</p>
+       <p>Your Artisan Oven order is confirmed — no need to do anything else until collection.</p>`,
+    payment_reminder:
+      `<p>Hi ${escHtml(order.customer_name)},</p>
+       <p>Just a friendly reminder that payment for your Artisan Oven order is still outstanding.</p>
+       <p>You can pay cash at collection, or ask a member of staff about bank transfer.</p>`,
+    ready_for_collection:
+      `<p>Hi ${escHtml(order.customer_name)},</p>
+       <p>Good news — your pizza is freshly baked and ready to collect! 🍕</p>
+       <p>Head to the Artisan Oven counter and quote your order code.</p>`,
+  };
+
+  const body = bodyMap[template] || `<p>Hi ${escHtml(order.customer_name)},</p><p>Update on your order:</p>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Artisan Oven</title></head>
-<body style="font-family:-apple-system,sans-serif;background:#FAF8F5;margin:0;padding:0">
-  <div style="max-width:600px;margin:32px auto;background:#fff;border-radius:8px;overflow:hidden">
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#FAF8F5;margin:0;padding:0">
+  <div style="max-width:600px;margin:32px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)">
     <div style="background:#1F3A2E;padding:24px 32px">
-      <h1 style="color:#FAF8F5;margin:0;font-size:1.4em;letter-spacing:.08em">ARTISAN OVEN</h1>
+      <h1 style="color:#FAF8F5;margin:0;font-size:1.4em;letter-spacing:.1em;font-weight:700">ARTISAN OVEN</h1>
     </div>
     <div style="padding:32px">
-      <p>Hi ${order.customer_name},</p>
-      <p>Thanks for your order! Here's your summary:</p>
-      <p><strong>Order: ${order.public_order_code}</strong></p>
-      <table style="width:100%;border-collapse:collapse;margin:16px 0">
+      ${body}
+      <p><strong>Order ${escHtml(order.public_order_code)}</strong></p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em">
         <thead>
-          <tr style="background:#f0ede8">
-            <th align="left" style="padding:8px">Child</th>
-            <th align="left" style="padding:8px">Class</th>
-            <th align="left" style="padding:8px">Size</th>
-            <th align="left" style="padding:8px">Price</th>
+          <tr style="background:#f5f2ee">
+            <th align="left" style="padding:8px;font-weight:600">Topping</th>
+            <th align="left" style="padding:8px;font-weight:600">Size</th>
+            <th align="left" style="padding:8px;font-weight:600">Child</th>
+            <th align="right" style="padding:8px;font-weight:600">Price</th>
           </tr>
         </thead>
         <tbody>${itemRows}</tbody>
-        ${order.discount_pence ? `<tr><td colspan="3" style="padding:8px">Discount (${order.discount_code})</td><td style="padding:8px">−£${(order.discount_pence/100).toFixed(2)}</td></tr>` : ''}
-        <tr style="font-weight:600">
-          <td colspan="3" style="padding:8px;border-top:2px solid #ccc">Total</td>
-          <td style="padding:8px;border-top:2px solid #ccc">£${(order.total_pence/100).toFixed(2)}</td>
-        </tr>
+        <tfoot>
+          ${discountRow}
+          <tr style="font-weight:700">
+            <td colspan="3" style="padding:10px 8px;border-top:2px solid #ccc">Total</td>
+            <td style="padding:10px 8px;border-top:2px solid #ccc;text-align:right">£${(order.total_pence/100).toFixed(2)}</td>
+          </tr>
+        </tfoot>
       </table>
       <p>
-        <a href="${viewLink}" style="display:inline-block;background:#C65D3B;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">View Your Order &amp; Payment Options →</a>
+        <a href="${viewLink}" style="display:inline-block;background:#C65D3B;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">View order &amp; payment options →</a>
       </p>
       <hr style="border:none;border-top:1px solid #e0ddd8;margin:24px 0">
-      <p style="color:#666;font-size:.9em">Marlow, Louis, and Quinton — Artisan Oven</p>
+      <p style="color:#888;font-size:.85em;margin:0">Artisan Oven · artisanoven.shop</p>
     </div>
   </div>
 </body>
 </html>`;
+}
+
+// ── WhatsApp Cloud API ────────────────────────────────────────────────────────
+
+async function sendWhatsApp({ order, items, template }) {
+  const token   = process.env.WHATSAPP_TOKEN;
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+  if (!token || !phoneId) {
+    console.log(`[whatsapp-stub] Would send "${template}" to ${order.phone_e164}`);
+    return;
+  }
+
+  const text = whatsappText(template, order, items);
+
+  const body = JSON.stringify({
+    messaging_product: 'whatsapp',
+    to:               order.phone_e164,
+    type:             'text',
+    text:             { body: text, preview_url: false },
+  });
+
+  await new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'graph.facebook.com',
+      path:     `/v19.0/${phoneId}/messages`,
+      method:   'POST',
+      headers:  {
+        'Content-Type':   'application/json',
+        'Authorization':  `Bearer ${token}`,
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, res => {
+      let raw = '';
+      res.on('data', d => { raw += d; });
+      res.on('end', () => {
+        if (res.statusCode >= 400) reject(new Error(`WhatsApp API ${res.statusCode}: ${raw}`));
+        else resolve(JSON.parse(raw));
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function whatsappText(template, order, items) {
+  const BASE = process.env.FRONTEND_URL || 'https://artisanoven.shop';
+  const link = `${BASE}/payment.html?q=${order.public_order_code}`;
+  const SIZE_SHORT = { '12inch': 'Whole', 'Half12inch': 'Half', 'Quarter12inch': 'Quarter' };
+
+  const itemLines = items.map(i =>
+    `• ${i.topping || '?'} (${SIZE_SHORT[i.size] || i.size})${i.child_name ? ` — ${i.child_name}` : ''}`
+  ).join('\n');
+
+  const msgs = {
+    order_confirmation:
+      `Hi ${order.customer_name}! 👋\n\nYour Artisan Oven order *${order.public_order_code}* is confirmed:\n\n${itemLines}\n\nTotal: £${(order.total_pence/100).toFixed(2)}\n\nView & pay: ${link}`,
+    payment_reminder:
+      `Hi ${order.customer_name} — friendly reminder that your Artisan Oven order *${order.public_order_code}* (£${(order.total_pence/100).toFixed(2)}) still has an outstanding balance.\n\nPay cash at collection or visit: ${link}`,
+    ready_for_collection:
+      `Hi ${order.customer_name}! 🍕 Your pizza from Artisan Oven is ready to collect. Quote *${order.public_order_code}* at the counter.`,
+  };
+
+  return msgs[template] || `Artisan Oven — update on your order ${order.public_order_code}: ${link}`;
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+async function logMessage({ orderId, channel, template, status, error }) {
+  await sql`
+    INSERT INTO message_log (order_id, channel, template, status, error)
+    VALUES (${orderId}, ${channel}, ${template}, ${status}, ${error ?? null})
+  `.catch(() => {});
+}
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 module.exports = { notifyOrder };
