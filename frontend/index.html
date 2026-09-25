@@ -1,112 +1,303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Artisan Oven — Student Pizza</title>
-  <meta name="description" content="Order wood-fired pizza made by students at school. Live availability, easy ordering, and flexible payment.">
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Artisan Oven — School Pizza Lunches</title>
+  <meta name="description" content="Wood-fired pizza made by students. Order every Tuesday for school lunch." />
+  <meta name="theme-color" content="#1f3a2e" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <style>
+    @font-face {
+      font-family: "Baar Sophia";
+      src: local("Baar Sophia"),
+           url("fonts/BaarSophia.woff") format("woff"),
+           url("fonts/BaarSophia.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --forest: #1F3A2E;
+      --forest-deep: #16281F;
+      --cream: #F7F3EC;
+      --cream-warm: #F1EADD;
+      --terracotta: #C65D3B;
+      --terracotta-deep: #A84A2C;
+      --sage: #6F8F72;
+      --text: #333333;
+      --text-soft: #5B5F5C;
+      --white: #FFFFFF;
+      --font-display: "Baar Sophia", "Iowan Old Style", Georgia, serif;
+      --font-body: "Baar Sophia", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --max-width: 1080px;
+      --radius-sm: 10px;
+      --radius-md: 18px;
+      --shadow-soft: 0 12px 30px rgba(31, 58, 46, 0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; width: 100%; max-width: 100vw; overflow-x: hidden; }
+
+    body {
+      margin: 0;
+      width: 100%;
+      max-width: 100vw;
+      background: var(--cream);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    h1 { font-family: var(--font-display); color: var(--forest); margin: 0; font-weight: 400; }
+    p { margin: 0; }
+    a { color: inherit; }
+
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    .site-header { padding: 28px 0 8px; text-align: center; }
+    .wordmark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      color: var(--forest);
+      text-decoration: none;
+    }
+    .wordmark .flame-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--terracotta); display: inline-block;
+    }
+
+    /* Scorch underline animation */
+    .scorch-underline { display: block; width: 210px; height: 18px; margin: 14px auto 0; }
+    .scorch-underline path {
+      fill: none; stroke: var(--terracotta); stroke-width: 5; stroke-linecap: round;
+      stroke-dasharray: 340; stroke-dashoffset: 340;
+      animation: draw-scorch 0.9s 0.15s ease-out forwards;
+    }
+    @keyframes draw-scorch { to { stroke-dashoffset: 0; } }
+
+    /* Main section */
+    .main-section { padding: 48px 0 72px; }
+
+    /* Status card */
+    .status-card {
+      max-width: 640px;
+      margin: 0 auto;
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: clamp(28px, 6vw, 52px);
+      box-shadow: var(--shadow-soft);
+      text-align: center;
+    }
+
+    .status-icon { width: 52px; height: 52px; margin: 0 auto 18px; color: var(--terracotta); }
+
+    .status-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 5vw, 2.4rem);
+      color: var(--forest);
+      margin: 0 0 10px;
+      font-weight: 400;
+    }
+
+    /* Status pill */
+    .status-pill {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 12px auto;
+    }
+    .status-pill.open   { background: rgba(111,143,114,0.15); color: var(--sage); border: 1px solid rgba(111,143,114,0.3); }
+    .status-pill.closed { background: rgba(198,93,59,0.12); color: var(--terracotta-deep); border: 1px solid rgba(198,93,59,0.25); }
+    .status-pill.low    { background: rgba(198,93,59,0.12); color: var(--terracotta-deep); border: 1px solid rgba(198,93,59,0.25); }
+
+    /* Progress bar */
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: var(--cream-warm);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 14px 0 8px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--sage);
+      border-radius: 999px;
+      transition: width 0.5s ease;
+    }
+    .progress-bar.low  { background: var(--terracotta); }
+    .progress-bar.full { background: var(--terracotta-deep); }
+
+    .tracker-footer {
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      margin: 4px 0 0;
+    }
+
+    /* Next opening text */
+    .closed-next {
+      margin-top: 22px;
+      color: var(--forest);
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      line-height: 1.5;
+    }
+    .status-card > p { color: var(--text-soft); margin: 0 0 16px; line-height: 1.6; }
+
+    /* Choice buttons */
+    .choice-cards {
+      display: flex;
+      gap: 12px;
+      margin-top: 28px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .choice-card {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 0.97rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      cursor: pointer;
+    }
+    .choice-card.primary {
+      background: var(--terracotta);
+      color: #fff;
+      box-shadow: 0 8px 18px -8px rgba(198,93,59,0.5);
+    }
+    .choice-card.primary:hover { background: var(--terracotta-deep); transform: translateY(-2px); }
+    .choice-card.secondary {
+      background: transparent;
+      color: var(--forest);
+      border: 1.5px solid rgba(31,58,46,0.25);
+    }
+    .choice-card.secondary:hover { border-color: var(--forest); transform: translateY(-2px); }
+    .choice-card.disabled { opacity: 0.45; pointer-events: none; }
+
+    /* Footer */
+    .site-footer { background: var(--forest); color: rgba(247, 243, 236, 0.85); padding: 44px 0 28px; margin-top: 40px; }
+    .footer-brand { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.1em; color: var(--cream); margin-bottom: 18px; }
+    .footer-grid { display: flex; flex-wrap: wrap; gap: 32px; font-size: 0.92rem; }
+    .footer-grid dt { color: var(--sage); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; margin-bottom: 4px; }
+    .footer-grid dd { margin: 0; }
+    .footer-bottom { margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(247, 243, 236, 0.15); font-size: 0.82rem; color: rgba(247, 243, 236, 0.55); }
+    .footer-bottom a { color: rgba(247, 243, 236, 0.55); text-decoration: none; }
+    .footer-bottom a:hover { color: var(--cream); }
+
+    /* WhatsApp floating button */
+    .whatsapp-float {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background-color: #25D366;
+      color: #fff;
+      border-radius: 50px;
+      padding: 12px 20px 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      text-decoration: none;
+      z-index: 999;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+    .whatsapp-float:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); background-color: #20BA56; }
+    .whatsapp-float svg { width: 24px; height: 24px; min-width: 24px; min-height: 24px; flex-shrink: 0; fill: currentColor; display: block; }
+
+    @media (max-width: 480px) {
+      .whatsapp-float { bottom: 20px; right: 20px; padding: 10px 16px 10px 12px; font-size: 0.9rem; }
+    }
+    @media (max-width: 400px) {
+      .container { padding: 0 18px; }
+      body { font-size: 16px; }
+    }
+  </style>
 </head>
 <body>
 
-  <!-- ── Service notice banner ─────────────────────────────────────────────── -->
-  <div class="notice-banner" id="notice-banner">
-    Next service: <strong>Tuesday lunchtimes — check back for availability</strong>
-  </div>
-
-  <!-- ── Header ─────────────────────────────────────────────────────────────── -->
   <header class="site-header">
     <div class="container">
-      <a href="/" class="site-logo">ARTISAN OVEN</a>
-      <nav class="site-nav" aria-label="Main">
-        <a href="order.html">Order</a>
-        <a href="payment.html">Pay</a>
-        <a href="events.html">Events</a>
-        <a href="terms.html">Terms</a>
-      </nav>
+      <span class="wordmark">
+        <span class="flame-dot" aria-hidden="true"></span>
+        ARTISAN OVEN
+      </span>
     </div>
   </header>
 
-  <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
-  <section class="hero" aria-label="Welcome">
-    <div class="container">
-      <h1>Wood-Fired Pizza,<br>Made by Students</h1>
-      <p class="tagline">Every Tuesday. Fresh dough, fresh toppings, real fire.</p>
-      <div class="hero-underline" aria-hidden="true"></div>
-    </div>
-  </section>
-
-  <!-- ── Main ───────────────────────────────────────────────────────────────── -->
-  <main>
+  <main class="main-section">
     <div class="container">
 
-      <!-- Availability tracker -->
-      <div id="availability-tracker" class="availability-tracker" aria-live="polite" aria-label="Availability">
-        <p class="tracker-title" id="tracker-title">Loading…</p>
+      <div id="availability-tracker" class="status-card" aria-live="polite" aria-label="Ordering status">
+
+        <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+
+        <h1 class="status-title" id="tracker-title">Loading…</h1>
+
+        <svg class="scorch-underline" viewBox="0 0 210 18" aria-hidden="true">
+          <path d="M6 12 C 40 4, 70 16, 105 8 S 170 2, 204 10" />
+        </svg>
+
         <div id="tracker-pill" class="status-pill open" role="status">Checking…</div>
+
         <div class="progress-track" aria-hidden="true">
           <div id="tracker-bar" class="progress-bar" style="width:0%"></div>
         </div>
         <p class="tracker-footer" id="tracker-footer"></p>
-        <p class="text-sm text-muted mt-sm" id="capacity-disclaimer">
-          Capacity is measured in whole-pizza equivalents (½ pizza = 0.5, ¼ = 0.25).
-        </p>
-      </div>
 
-      <!-- Choice cards -->
-      <div class="choice-cards" role="group" aria-label="What would you like to do?">
-        <a href="order.html" class="choice-card primary js-order-btn" id="order-btn" aria-label="Order a pizza">
-          <!-- Pizza slice icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 2L2 20h20L12 2z"/>
-            <circle cx="12" cy="15" r="1" fill="currentColor"/>
-            <circle cx="9"  cy="11" r=".8" fill="currentColor"/>
-            <circle cx="15" cy="11" r=".8" fill="currentColor"/>
-          </svg>
-          I want to order
-        </a>
-        <a href="payment.html" class="choice-card" aria-label="Find your order and pay">
-          <!-- Coin icon -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M12 7v1m0 8v1M9.5 9.5C9.5 8.7 10.6 8 12 8s2.5.7 2.5 1.5S13.4 11 12 11s-2.5.7-2.5 1.5S10.6 16 12 16s2.5-.7 2.5-1.5"/>
-          </svg>
-          I need to pay
-        </a>
+        <div class="choice-cards" role="group" aria-label="What would you like to do?">
+          <a href="order.html" class="choice-card primary js-order-btn" id="order-btn" aria-label="Order a pizza">
+            I want to order
+          </a>
+          <a href="payment.html" class="choice-card secondary" aria-label="Find your order and pay">
+            I need to pay
+          </a>
+        </div>
+
       </div>
 
     </div>
   </main>
 
-  <!-- ── Footer ─────────────────────────────────────────────────────────────── -->
   <footer class="site-footer">
     <div class="container">
-      <div class="footer-grid">
-        <div class="footer-col">
-          <h5>Artisan Oven</h5>
-          <ul>
-            <li><a href="order.html">Order pizza</a></li>
-            <li><a href="payment.html">Find &amp; pay</a></li>
-            <li><a href="events.html">Special events</a></li>
-          </ul>
+      <p class="footer-brand">ARTISAN OVEN</p>
+      <dl class="footer-grid">
+        <div>
+          <dt>Email</dt>
+          <dd><a href="mailto:artisanovenst@gmail.com" style="color:inherit">artisanovenst@gmail.com</a></dd>
         </div>
-        <div class="footer-col">
-          <h5>Info</h5>
-          <ul>
-            <li><a href="terms.html">Terms &amp; conditions</a></li>
-            <li><a href="mailto:louis@benne.co.uk">Contact us</a></li>
-          </ul>
+        <div>
+          <dt>School Lunches</dt>
+          <dd>Every Tuesday</dd>
         </div>
-        <div class="footer-col">
-          <h5>School Lunches</h5>
-          <ul>
-            <li>Every Tuesday</li>
-            <li>Collection at lunchtime</li>
-            <li>Orders close Sunday 9 pm</li>
-          </ul>
-        </div>
-      </div>
+      </dl>
       <div class="footer-bottom">
         <span>© <span class="js-year"></span> Artisan Oven — Marlow, Louis &amp; Quinton</span>
         <span><a href="terms.html">Terms</a> · <a href="admin/index.html">Admin</a></span>
@@ -114,12 +305,9 @@
     </div>
   </footer>
 
-  <!-- WhatsApp floating link -->
-  <a href="https://wa.me/447911123456" class="wa-float" target="_blank" rel="noopener" aria-label="WhatsApp us">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-    </svg>
-    WhatsApp
+  <a href="https://chat.whatsapp.com/H6UKHyWuVHnCJWNu7f83ZO" class="whatsapp-float" target="_blank" rel="noopener noreferrer" aria-label="Join WhatsApp group">
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.031 0C5.389 0 0 5.39 0 12.031c0 2.124.551 4.195 1.6 6.01L.226 23.511l5.602-1.468c1.745.955 3.715 1.458 5.736 1.458h.005c6.641 0 12.034-5.391 12.034-12.033S18.216 0 12.031 0zm0 21.466c-1.802 0-3.568-.485-5.114-1.402l-.367-.218-3.799.996.999-3.704-.239-.38C2.569 15.116 2.035 13.593 2.035 12.03 2.035 6.516 6.518 2.03 12.033 2.03c2.673 0 5.187 1.042 7.078 2.934 1.89 1.892 2.932 4.406 2.932 7.081 0 5.513-4.484 9.987-9.997 9.987l-.015.034zm5.485-7.513c-.301-.151-1.779-.878-2.054-.979-.275-.101-.476-.151-.676.151-.2.301-.776.979-.952 1.18-.176.201-.352.226-.653.076-.301-.151-1.271-.469-2.42-1.498-.894-.8-1.499-1.789-1.675-2.09-.176-.301-.019-.463.131-.614.135-.135.301-.351.452-.526.151-.176.201-.301.301-.502.101-.201.05-.376-.025-.526-.075-.151-.676-1.629-.926-2.231-.243-.588-.49-.508-.676-.517-.176-.008-.376-.008-.576-.008-.2 0-.526.075-.801.376-.275.301-1.052 1.028-1.052 2.507 0 1.479 1.077 2.91 1.228 3.111.151.201 2.119 3.235 5.132 4.536 2.378 1.023 2.91 1.048 3.436 1.002.585-.051 1.779-.727 2.029-1.429.25-.702.25-1.304.176-1.429-.076-.126-.276-.202-.577-.353z" /></svg>
+    Join WhatsApp
   </a>
 
   <script src="site.js" defer></script>
