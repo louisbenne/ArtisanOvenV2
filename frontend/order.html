@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Order Pizza — Artisan Oven</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="site-logo">ARTISAN OVEN</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="order.html" aria-current="page">Order</a>
+        <a href="payment.html">Pay</a>
+        <a href="events.html">Events</a>
+        <a href="terms.html">Terms</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container" style="max-width:680px">
+
+      <!-- Closed state -->
+      <div id="closed-notice" class="hidden" style="margin-top:var(--space-xl)">
+        <div class="alert alert-warning">
+          <strong>Ordering is currently closed.</strong>
+          <span id="closed-reason"> Check back later or contact us on WhatsApp.</span>
+        </div>
+        <p class="text-muted text-sm mt-md">You can still <a href="payment.html">look up a previous order</a> or <a href="events.html">see upcoming events</a>.</p>
+      </div>
+
+      <!-- Order form -->
+      <div id="order-form-wrap">
+        <h1 style="margin-top:var(--space-xl);margin-bottom:var(--space-xs)">Order Pizza</h1>
+        <p class="text-muted text-sm" id="session-title-hint">Loading…</p>
+
+        <div id="capacity-bar-wrap" style="margin:var(--space-md) 0">
+          <div class="progress-track" aria-hidden="true">
+            <div id="cap-bar" class="progress-bar" style="width:0%"></div>
+          </div>
+          <p class="text-sm text-muted" id="cap-text"></p>
+        </div>
+
+        <form id="pizza-form" novalidate>
+
+          <!-- Contact details -->
+          <fieldset class="form-group" style="border:none;padding:0;margin-bottom:0">
+            <legend class="font-semibold" style="margin-bottom:var(--space-md);font-size:1rem">Your details</legend>
+            <div class="form-group">
+              <label for="name">Full name <span aria-hidden="true">*</span></label>
+              <input type="text" id="name" name="name" autocomplete="name" required placeholder="Jane Smith">
+            </div>
+            <div class="form-group">
+              <label for="email">Email address <span aria-hidden="true">*</span></label>
+              <input type="email" id="email" name="email" autocomplete="email" required placeholder="jane@example.com">
+              <span class="form-hint">Your confirmation and payment link will be sent here</span>
+            </div>
+            <div class="form-group">
+              <label for="year-group">Year group</label>
+              <select id="year-group" name="yearGroup">
+                <option value="">— select —</option>
+                <option>Year 7</option>
+                <option>Year 8</option>
+                <option>Year 9</option>
+                <option>Year 10</option>
+                <option>Year 11</option>
+                <option>Year 12</option>
+                <option>Year 13</option>
+                <option>Staff</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <hr style="margin:var(--space-lg) 0;border:none;border-top:1px solid var(--border)">
+
+          <!-- Pizza rows -->
+          <fieldset style="border:none;padding:0;margin-bottom:0">
+            <legend class="font-semibold" style="margin-bottom:var(--space-md);font-size:1rem">Your pizzas</legend>
+
+            <div id="pizza-rows"></div>
+
+            <button type="button" class="btn btn-outline btn-sm mt-sm" id="add-pizza-btn">+ Add another pizza</button>
+          </fieldset>
+
+          <hr style="margin:var(--space-lg) 0;border:none;border-top:1px solid var(--border)">
+
+          <!-- Discount -->
+          <div class="form-group">
+            <label for="discount-code">Discount code <span class="text-muted text-sm">(optional)</span></label>
+            <div style="display:flex;gap:var(--space-sm)">
+              <input type="text" id="discount-code" name="discountCode" placeholder="e.g. STMSCS" style="text-transform:uppercase;flex:1">
+              <button type="button" class="btn btn-outline" id="apply-discount-btn">Apply</button>
+            </div>
+            <div id="discount-feedback" class="hidden"></div>
+          </div>
+
+          <!-- Notes -->
+          <div class="form-group">
+            <label for="notes">Notes <span class="text-muted text-sm">(optional)</span></label>
+            <textarea id="notes" name="notes" rows="2" placeholder="Allergies, special requests…" maxlength="300"></textarea>
+          </div>
+
+          <!-- WhatsApp opt-in -->
+          <div class="form-group" style="display:flex;align-items:flex-start;gap:var(--space-sm)">
+            <input type="checkbox" id="whatsapp-optin" name="whatsappOptIn" style="margin-top:3px;flex-shrink:0">
+            <label for="whatsapp-optin" style="margin-bottom:0;font-weight:400;cursor:pointer">
+              Send me a WhatsApp reminder when ordering opens each week
+              <span class="text-muted text-sm">(UK numbers only)</span>
+            </label>
+          </div>
+
+          <!-- Total -->
+          <div class="order-total" id="order-total" style="margin:var(--space-lg) 0;padding:var(--space-md) var(--space-lg);background:var(--forest-800);color:var(--cream-50);border-radius:var(--radius-lg);display:flex;justify-content:space-between;align-items:center">
+            <span>Total</span>
+            <span id="total-display" style="font-size:1.4rem;font-weight:700">£0.00</span>
+          </div>
+
+          <div id="form-error" class="alert alert-error hidden" role="alert"></div>
+
+          <button type="submit" class="btn btn-forest btn-full" id="submit-btn" disabled>
+            Place Order
+          </button>
+
+          <p class="text-sm text-muted mt-sm" style="text-align:center">
+            By placing an order you agree to our <a href="terms.html">terms &amp; conditions</a>.
+            Payment is due by collection.
+          </p>
+
+        </form>
+
+        <!-- Confirmation -->
+        <div id="order-confirmation" class="hidden">
+          <div style="text-align:center;padding:var(--space-xl) 0">
+            <div style="font-size:3rem;margin-bottom:var(--space-md)">🍕</div>
+            <h2 class="font-brand">Order placed!</h2>
+            <p class="text-muted mt-sm">Your order code is</p>
+            <div style="font-size:2rem;font-weight:800;letter-spacing:.1em;color:var(--forest-800);margin:var(--space-md) 0" id="confirm-code"></div>
+            <p class="text-sm text-muted">A confirmation email is on its way. Bring cash or pay online when you collect.</p>
+            <div class="mt-lg" style="display:flex;flex-direction:column;gap:var(--space-sm);align-items:center">
+              <a href="payment.html" class="btn btn-forest">View &amp; pay my order</a>
+              <button class="btn btn-outline" id="order-another-btn">Order another pizza</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <span>© <span class="js-year"></span> Artisan Oven</span>
+        <span><a href="terms.html">Terms</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="site.js" defer></script>
+  <script>
+  /* ── Pizza sizes and prices ──────────────────────────────────────────────── */
+  const SIZES = [
+    { value: '12inch', label: '12″ Pizza (whole)',  price: 800 },
+    { value: 'Half',   label: '½ Pizza',            price: 450 },
+    { value: 'Quarter',label: '¼ Pizza (slice)',     price: 250 },
+  ];
+
+  const TOPPINGS = [
+    'Margherita', 'Pepperoni', 'Veggie (seasonal)', 'BBQ Chicken',
+    'Ham &amp; Mushroom', 'Four Cheese', 'Custom (see notes)',
+  ];
+
+  const API = window.ORDER_API_URL || '/api';
+
+  let sessionData   = null;
+  let pizzaCount    = 0;
+  let discountData  = null;  // { code, discountPence, finalPence } or null
+
+  /* ── Init ─────────────────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.querySelectorAll('.js-year').forEach(el => el.textContent = new Date().getFullYear());
+    await loadSession();
+    addPizzaRow();   // start with one row
+    setupDiscountBtn();
+    document.getElementById('add-pizza-btn').addEventListener('click', addPizzaRow);
+    document.getElementById('pizza-form').addEventListener('submit', submitOrder);
+    document.getElementById('order-another-btn')?.addEventListener('click', resetForm);
+  });
+
+  async function loadSession() {
+    try {
+      const res  = await fetch(`${API}/sessions/current`);
+      sessionData = await res.json();
+    } catch {
+      sessionData = { orderingOpen: false };
+    }
+
+    if (!sessionData.orderingOpen) {
+      document.getElementById('closed-notice').classList.remove('hidden');
+      document.getElementById('order-form-wrap').querySelector('form').classList.add('hidden');
+      document.getElementById('session-title-hint').textContent = '';
+      return;
+    }
+
+    document.getElementById('session-title-hint').textContent =
+      sessionData.serviceTitle ? `Service: ${sessionData.serviceTitle}` : '';
+
+    renderCapacityBar();
+  }
+
+  function renderCapacityBar() {
+    if (!sessionData) return;
+    const used = sessionData.currentPizzas ?? 0;
+    const max  = sessionData.maxPizzas    ?? 1;
+    const pct  = Math.min(100, Math.round(used / max * 100));
+    document.getElementById('cap-bar').style.width  = pct + '%';
+    document.getElementById('cap-text').textContent =
+      `${used} of ${max} pizzas claimed — ${sessionData.remainingPizzas ?? (max - used)} remaining`;
+    document.getElementById('submit-btn').disabled  = false;
+  }
+
+  /* ── Pizza rows ───────────────────────────────────────────────────────────── */
+  function addPizzaRow() {
+    pizzaCount++;
+    const idx  = pizzaCount;
+    const wrap = document.getElementById('pizza-rows');
+    const row  = document.createElement('div');
+    row.className = 'pizza-row';
+    row.dataset.idx = idx;
+    row.innerHTML = `
+      <div class="pizza-row-header">
+        <span class="pizza-row-label">Pizza ${idx}</span>
+        <button type="button" class="btn btn-outline btn-sm remove-pizza-btn" data-idx="${idx}" ${idx === 1 ? 'style="display:none"' : ''}>Remove</button>
+      </div>
+      <div class="pizza-row-body">
+        <div class="form-group" style="margin-bottom:var(--space-sm)">
+          <label for="size-${idx}">Size</label>
+          <select id="size-${idx}" name="size_${idx}" required>
+            ${SIZES.map(s => `<option value="${s.value}" data-price="${s.price}">${s.label} — £${(s.price/100).toFixed(2)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label for="topping-${idx}">Topping</label>
+          <select id="topping-${idx}" name="topping_${idx}" required>
+            ${TOPPINGS.map(t => `<option value="${t}">${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    `;
+    wrap.appendChild(row);
+    row.querySelector(`#size-${idx}`).addEventListener('change', updateTotal);
+    updateTotal();
+    updateRemoveButtons();
+  }
+
+  function removePizzaRow(idx) {
+    document.querySelector(`.pizza-row[data-idx="${idx}"]`)?.remove();
+    updateTotal();
+    updateRemoveButtons();
+    // Re-label remaining rows
+    document.querySelectorAll('.pizza-row').forEach((row, i) => {
+      row.querySelector('.pizza-row-label').textContent = `Pizza ${i + 1}`;
+    });
+  }
+
+  document.addEventListener('click', e => {
+    if (e.target.closest('.remove-pizza-btn')) {
+      const idx = e.target.closest('.remove-pizza-btn').dataset.idx;
+      removePizzaRow(idx);
+    }
+  });
+
+  function updateRemoveButtons() {
+    const rows = document.querySelectorAll('.pizza-row');
+    rows.forEach(row => {
+      const btn = row.querySelector('.remove-pizza-btn');
+      if (btn) btn.style.display = rows.length > 1 ? '' : 'none';
+    });
+  }
+
+  function getSubtotalPence() {
+    let total = 0;
+    document.querySelectorAll('.pizza-row').forEach(row => {
+      const idx    = row.dataset.idx;
+      const select = document.getElementById(`size-${idx}`);
+      if (select) {
+        const opt = select.options[select.selectedIndex];
+        total += parseInt(opt.dataset.price || 0, 10);
+      }
+    });
+    return total;
+  }
+
+  function updateTotal() {
+    const sub = getSubtotalPence();
+    let display = sub;
+    if (discountData) {
+      display = Math.max(0, sub - discountData.discountPence);
+    }
+    document.getElementById('total-display').textContent = `£${(display / 100).toFixed(2)}`;
+  }
+
+  /* ── Discount ─────────────────────────────────────────────────────────────── */
+  function setupDiscountBtn() {
+    document.getElementById('apply-discount-btn').addEventListener('click', async () => {
+      const code = document.getElementById('discount-code').value.trim().toUpperCase();
+      const fb   = document.getElementById('discount-feedback');
+      if (!code) return;
+
+      const sub = getSubtotalPence();
+      try {
+        const res  = await fetch(`${API}/discount/check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, subtotalPence: sub }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          discountData = data;
+          fb.className  = 'alert alert-success mt-sm';
+          fb.textContent = `✓ ${code} applied — saving £${(data.discountPence / 100).toFixed(2)}`;
+          fb.classList.remove('hidden');
+        } else {
+          discountData = null;
+          fb.className  = 'alert alert-error mt-sm';
+          fb.textContent = data.message || 'Invalid code.';
+          fb.classList.remove('hidden');
+        }
+      } catch {
+        discountData = null;
+        fb.className  = 'alert alert-error mt-sm';
+        fb.textContent = 'Could not check code — try again.';
+        fb.classList.remove('hidden');
+      }
+      updateTotal();
+    });
+  }
+
+  /* ── Submit ───────────────────────────────────────────────────────────────── */
+  async function submitOrder(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('form-error');
+    errEl.classList.add('hidden');
+
+    const name  = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    if (!name || !email) {
+      errEl.textContent = 'Please enter your name and email address.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    const rows = document.querySelectorAll('.pizza-row');
+    if (!rows.length) {
+      errEl.textContent = 'Please add at least one pizza.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    const items = [];
+    rows.forEach(row => {
+      const idx     = row.dataset.idx;
+      const sizeEl  = document.getElementById(`size-${idx}`);
+      const topEl   = document.getElementById(`topping-${idx}`);
+      const opt     = sizeEl.options[sizeEl.selectedIndex];
+      items.push({
+        size:       sizeEl.value,
+        topping:    topEl.value,
+        pricePence: parseInt(opt.dataset.price || 0, 10),
+      });
+    });
+
+    const payload = {
+      customerName:  name,
+      email,
+      yearGroup:     document.getElementById('year-group').value || null,
+      notes:         document.getElementById('notes').value.trim() || null,
+      whatsappOptIn: document.getElementById('whatsapp-optin').checked,
+      discountCode:  discountData ? document.getElementById('discount-code').value.trim().toUpperCase() : null,
+      items,
+      submissionId:  crypto.randomUUID(),
+    };
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled   = true;
+    btn.textContent = 'Placing order…';
+
+    try {
+      const res  = await fetch(`${API}/orders`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (data.success || data.orderId) {
+        document.getElementById('confirm-code').textContent = data.orderId;
+        document.getElementById('pizza-form').classList.add('hidden');
+        document.getElementById('order-confirmation').classList.remove('hidden');
+        // Persist so payment.html can auto-fill
+        try { sessionStorage.setItem('ao_last_order', JSON.stringify({ orderId: data.orderId, token: data.token, email })); } catch {}
+      } else {
+        errEl.textContent = data.message || 'Something went wrong. Please try again.';
+        errEl.classList.remove('hidden');
+        btn.disabled   = false;
+        btn.textContent = 'Place Order';
+      }
+    } catch {
+      errEl.textContent = 'Network error — please check your connection and try again.';
+      errEl.classList.remove('hidden');
+      btn.disabled   = false;
+      btn.textContent = 'Place Order';
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('pizza-form').reset();
+    document.getElementById('pizza-rows').innerHTML = '';
+    pizzaCount   = 0;
+    discountData = null;
+    document.getElementById('discount-feedback').classList.add('hidden');
+    document.getElementById('order-confirmation').classList.add('hidden');
+    document.getElementById('pizza-form').classList.remove('hidden');
+    addPizzaRow();
+    updateTotal();
+  }
+  </script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parent Order — Artisan Oven</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="site-logo">ARTISAN OVEN</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="container" style="max-width:600px">
+
+      <!-- Gate: require access code -->
+      <div id="gate-wrap" style="margin-top:var(--space-xl)">
+        <h1 style="margin-bottom:var(--space-xs)">Parent Orders</h1>
+        <p class="text-muted text-sm">This area is for parents and guardians ordering for students.</p>
+        <form id="gate-form" style="margin-top:var(--space-lg)" novalidate>
+          <div class="form-group">
+            <label for="access-code">Access code</label>
+            <input type="text" id="access-code" name="accessCode" placeholder="Enter your access code" required autocomplete="off">
+            <span class="form-hint">Contact the school office if you don't have a code.</span>
+          </div>
+          <div id="gate-error" class="alert alert-error hidden" role="alert"></div>
+          <button type="submit" class="btn btn-forest" id="gate-btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Order form (shown after auth) -->
+      <div id="order-wrap" class="hidden" style="margin-top:var(--space-xl)">
+        <h1 style="margin-bottom:var(--space-xs)">Order for your child</h1>
+        <p class="text-muted text-sm" id="session-hint"></p>
+
+        <form id="parent-form" style="margin-top:var(--space-lg)" novalidate>
+          <div class="form-group">
+            <label for="parent-name">Your name <span aria-hidden="true">*</span></label>
+            <input type="text" id="parent-name" autocomplete="name" required>
+          </div>
+          <div class="form-group">
+            <label for="parent-email">Email address <span aria-hidden="true">*</span></label>
+            <input type="email" id="parent-email" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="student-name">Student's name <span aria-hidden="true">*</span></label>
+            <input type="text" id="student-name" required>
+          </div>
+          <div class="form-group">
+            <label for="student-year">Student's year group</label>
+            <select id="student-year">
+              <option value="">— select —</option>
+              <option>Year 7</option><option>Year 8</option><option>Year 9</option>
+              <option>Year 10</option><option>Year 11</option><option>Year 12</option><option>Year 13</option>
+            </select>
+          </div>
+
+          <hr style="margin:var(--space-lg) 0;border:none;border-top:1px solid var(--border)">
+
+          <fieldset style="border:none;padding:0">
+            <legend class="font-semibold" style="margin-bottom:var(--space-md);font-size:1rem">Pizza choice</legend>
+            <div class="form-group">
+              <label for="pizza-size">Size</label>
+              <select id="pizza-size" required>
+                <option value="12inch" data-price="800">12″ Pizza (whole) — £8.00</option>
+                <option value="Half"   data-price="450">½ Pizza — £4.50</option>
+                <option value="Quarter" data-price="250">¼ Pizza (slice) — £2.50</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="pizza-topping">Topping</label>
+              <select id="pizza-topping" required>
+                <option>Margherita</option>
+                <option>Pepperoni</option>
+                <option>Veggie (seasonal)</option>
+                <option>BBQ Chicken</option>
+                <option>Ham &amp; Mushroom</option>
+                <option>Four Cheese</option>
+                <option>Custom (see notes)</option>
+              </select>
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label for="parent-notes">Notes <span class="text-muted text-sm">(optional)</span></label>
+            <textarea id="parent-notes" rows="2" placeholder="Allergies, dietary requirements…" maxlength="300"></textarea>
+          </div>
+
+          <div style="margin:var(--space-lg) 0;padding:var(--space-md) var(--space-lg);background:var(--forest-800);color:var(--cream-50);border-radius:var(--radius-lg);display:flex;justify-content:space-between;align-items:center">
+            <span>Total</span>
+            <span id="p-total" style="font-size:1.4rem;font-weight:700">£8.00</span>
+          </div>
+
+          <div id="parent-error" class="alert alert-error hidden" role="alert"></div>
+          <button type="submit" class="btn btn-forest btn-full" id="parent-submit">Place order</button>
+          <p class="text-sm text-muted mt-sm" style="text-align:center">By ordering you agree to our <a href="terms.html">terms &amp; conditions</a>.</p>
+        </form>
+
+        <div id="parent-confirmation" class="hidden" style="text-align:center;padding:var(--space-xl) 0">
+          <div style="font-size:3rem;margin-bottom:var(--space-md)">🍕</div>
+          <h2 class="font-brand">Order placed!</h2>
+          <p class="text-muted mt-sm">Order code</p>
+          <div style="font-size:2rem;font-weight:800;letter-spacing:.1em;color:var(--forest-800);margin:var(--space-md) 0" id="parent-confirm-code"></div>
+          <p class="text-sm text-muted">A confirmation has been sent to your email. Payment details included.</p>
+          <a href="payment.html" class="btn btn-forest mt-lg">View &amp; pay</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <span>© <span class="js-year"></span> Artisan Oven</span>
+        <span><a href="terms.html">Terms</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="site.js" defer></script>
+  <script>
+  const API = window.ORDER_API_URL || '/api';
+  let parentToken = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.js-year').forEach(el => el.textContent = new Date().getFullYear());
+
+    // Check for stored parent token
+    try {
+      parentToken = sessionStorage.getItem('ao_parent_token');
+      if (parentToken) showOrderForm();
+    } catch {}
+
+    document.getElementById('gate-form').addEventListener('submit', submitGate);
+    document.getElementById('pizza-size').addEventListener('change', updateTotal);
+    document.getElementById('parent-form').addEventListener('submit', submitOrder);
+  });
+
+  async function submitGate(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('gate-error');
+    errEl.classList.add('hidden');
+    const code = document.getElementById('access-code').value.trim().toUpperCase();
+    const btn  = document.getElementById('gate-btn');
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+
+    try {
+      const res  = await fetch(`${API}/parent/auth`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ accessCode: code }),
+      });
+      const data = await res.json();
+      if (data.token) {
+        parentToken = data.token;
+        try { sessionStorage.setItem('ao_parent_token', parentToken); } catch {}
+        showOrderForm();
+      } else {
+        errEl.textContent = data.message || 'Invalid access code.';
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Continue';
+      }
+    } catch {
+      errEl.textContent = 'Network error — please try again.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Continue';
+    }
+  }
+
+  async function showOrderForm() {
+    document.getElementById('gate-wrap').classList.add('hidden');
+    document.getElementById('order-wrap').classList.remove('hidden');
+    try {
+      const res  = await fetch(`${API}/sessions/current`);
+      const data = await res.json();
+      document.getElementById('session-hint').textContent = data.serviceTitle
+        ? `Service: ${data.serviceTitle}` : '';
+    } catch {}
+    updateTotal();
+  }
+
+  function updateTotal() {
+    const sel = document.getElementById('pizza-size');
+    const opt = sel.options[sel.selectedIndex];
+    const p   = parseInt(opt.dataset.price || 800, 10);
+    document.getElementById('p-total').textContent = `£${(p / 100).toFixed(2)}`;
+  }
+
+  async function submitOrder(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('parent-error');
+    errEl.classList.add('hidden');
+    const sizeEl = document.getElementById('pizza-size');
+    const opt    = sizeEl.options[sizeEl.selectedIndex];
+
+    const payload = {
+      orderType:    'parent',
+      customerName: document.getElementById('parent-name').value.trim(),
+      email:        document.getElementById('parent-email').value.trim(),
+      notes:        [
+        document.getElementById('student-name').value.trim()
+          ? `Student: ${document.getElementById('student-name').value.trim()}` : '',
+        document.getElementById('student-year').value
+          ? document.getElementById('student-year').value : '',
+        document.getElementById('parent-notes').value.trim(),
+      ].filter(Boolean).join(' · ') || null,
+      items: [{
+        size:       sizeEl.value,
+        topping:    document.getElementById('pizza-topping').value,
+        pricePence: parseInt(opt.dataset.price || 800, 10),
+      }],
+      submissionId: crypto.randomUUID(),
+    };
+
+    const btn = document.getElementById('parent-submit');
+    btn.disabled = true;
+    btn.textContent = 'Placing order…';
+
+    try {
+      const res  = await fetch(`${API}/orders`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${parentToken}` },
+        body:    JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success || data.orderId) {
+        document.getElementById('parent-confirm-code').textContent = data.orderId;
+        document.getElementById('parent-form').classList.add('hidden');
+        document.getElementById('parent-confirmation').classList.remove('hidden');
+      } else {
+        errEl.textContent = data.message || 'Something went wrong.';
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Place order';
+      }
+    } catch {
+      errEl.textContent = 'Network error — please try again.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Place order';
+    }
+  }
+  </script>
+</body>
+</html>

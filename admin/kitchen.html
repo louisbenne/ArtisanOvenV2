@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kitchen — Artisan Oven Admin</title>
+  <link rel="stylesheet" href="admin-shell.css">
+  <link rel="manifest" href="kitchen-manifest.json">
+  <style>
+    .kitchen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: var(--space-md);
+    }
+    .ticket {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+      transition: opacity .2s, border-color .2s;
+    }
+    .ticket.done {
+      opacity: .45;
+      border-color: var(--cream-700, #d0ccc3);
+    }
+    .ticket-order { font-size: .8rem; color: var(--text-400); margin-bottom: 4px; }
+    .ticket-name  { font-weight: 700; margin-bottom: var(--space-sm); }
+    .ticket-item  {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: 6px 0;
+      border-top: 1px solid var(--cream-800);
+      font-size: .9rem;
+      cursor: pointer;
+    }
+    .ticket-item.prepared { text-decoration: line-through; color: var(--text-400); }
+    .tick-btn {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--forest-400);
+      background: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--forest-700);
+      font-size: .8rem;
+    }
+    .ticket-item.prepared .tick-btn {
+      background: var(--forest-600);
+      border-color: var(--forest-600);
+      color: #fff;
+    }
+    .board-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-sm);
+    }
+    .board-stats { font-size: .85rem; color: var(--text-400); }
+  </style>
+</head>
+<body>
+<script>window.ADMIN_PAGE = 'kitchen';</script>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar" aria-label="Admin navigation">
+    <div class="sidebar-logo">
+      🍕 ARTISAN OVEN
+      <small>Kitchen</small>
+      <span class="role-badge js-admin-role"></span>
+    </div>
+    <nav class="sidebar-nav" aria-label="Admin pages">
+      <a href="index.html"    data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+      <a href="orders.html"   data-page="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Orders</a>
+      <a href="kitchen.html"  data-page="kitchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Kitchen</a>
+      <a href="events.html"   data-page="events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Events</a>
+      <a href="money.html"    data-page="money" data-min-role="treasurer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v1m0 8v1M9.5 9.5C9.5 8.7 10.6 8 12 8s2.5.7 2.5 1.5S13.4 11 12 11s-2.5.7-2.5 1.5S10.6 16 12 16s2.5-.7 2.5-1.5"/></svg>Money</a>
+      <a href="comms.html"    data-page="comms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Comms</a>
+      <a href="settings.html" data-page="settings" data-min-role="owner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="../frontend/index.html" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View site</a>
+      <a href="#" id="logout-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Log out</a>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">☰</button>
+      <h1>Kitchen Board</h1>
+      <span class="text-sm text-muted">Hi, <span class="js-admin-user"></span></span>
+    </header>
+
+    <div class="admin-content">
+      <div class="board-header">
+        <div class="board-stats" id="board-stats">Loading…</div>
+        <div style="display:flex;gap:var(--space-sm)">
+          <label style="display:flex;align-items:center;gap:6px;font-size:.85rem;cursor:pointer">
+            <input type="checkbox" id="hide-done"> Hide completed
+          </label>
+          <button class="btn btn-outline btn-sm" id="refresh-btn">Refresh</button>
+        </div>
+      </div>
+      <div id="kitchen-board" class="kitchen-grid" aria-live="polite">
+        <div class="text-muted">Loading tickets…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="admin-shell.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const { apiGet, apiPost } = window.aoAdmin;
+  let boardData = [];
+
+  async function loadBoard() {
+    const data = await apiGet('/admin/kitchen/board');
+    boardData = data.orders || [];
+    renderBoard();
+  }
+
+  function renderBoard() {
+    const hideDone = document.getElementById('hide-done').checked;
+    const board    = document.getElementById('kitchen-board');
+    let visible    = boardData;
+    if (hideDone) visible = visible.filter(o => !isOrderDone(o));
+
+    if (!visible.length) {
+      board.innerHTML = `<p class="text-muted">${hideDone ? 'All tickets done!' : 'No orders yet.'}</p>`;
+      updateStats();
+      return;
+    }
+
+    board.innerHTML = visible.map(renderTicket).join('');
+    updateStats();
+  }
+
+  function isOrderDone(o) {
+    return (o.items || []).every(i => i.prepared);
+  }
+
+  function renderTicket(o) {
+    const done  = isOrderDone(o);
+    const items = (o.items || []).map(item => `
+      <div class="ticket-item ${item.prepared ? 'prepared' : ''}" data-item-id="${item.itemId}" data-order-id="${escHtml(o.orderId)}">
+        <button class="tick-btn" aria-label="Mark prepared">${item.prepared ? '✓' : ''}</button>
+        <span>${escHtml(item.topping)} <span style="color:var(--text-400)">${escHtml(item.size)}</span></span>
+      </div>`).join('');
+    return `
+      <div class="ticket ${done ? 'done' : ''}" data-order="${escHtml(o.orderId)}">
+        <div class="ticket-order">${escHtml(o.orderId)}</div>
+        <div class="ticket-name">${escHtml(o.customerName)}</div>
+        ${o.notes ? `<div style="font-size:.8rem;color:var(--text-400);margin-bottom:var(--space-xs)">📝 ${escHtml(o.notes)}</div>` : ''}
+        ${items}
+      </div>`;
+  }
+
+  function updateStats() {
+    const total    = boardData.length;
+    const done     = boardData.filter(isOrderDone).length;
+    const itemsDone = boardData.flatMap(o => o.items || []).filter(i => i.prepared).length;
+    const itemsTotal = boardData.flatMap(o => o.items || []).length;
+    document.getElementById('board-stats').textContent =
+      `${done}/${total} orders complete · ${itemsDone}/${itemsTotal} items prepared`;
+  }
+
+  // Tick items
+  document.addEventListener('click', async e => {
+    const item = e.target.closest('.ticket-item');
+    if (!item) return;
+    const itemId  = item.dataset.itemId;
+    const orderId = item.dataset.orderId;
+    const data = await apiPost('/admin/kitchen/tick', { itemId, orderId });
+    if (data.success) {
+      // Optimistic update
+      boardData.forEach(o => {
+        if (o.orderId === orderId) {
+          (o.items || []).forEach(i => { if (i.itemId == itemId) i.prepared = data.prepared; });
+        }
+      });
+      renderBoard();
+    }
+  });
+
+  document.getElementById('hide-done').addEventListener('change', renderBoard);
+  document.getElementById('refresh-btn').addEventListener('click', loadBoard);
+
+  // Socket live updates
+  const socket = window.aoAdmin.connectSocket('/kitchen');
+  socket?.on('item:tick',    loadBoard);
+  socket?.on('order:created', loadBoard);
+
+  loadBoard();
+  setInterval(loadBoard, 60_000);
+});
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

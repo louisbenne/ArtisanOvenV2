@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Events — Artisan Oven Admin</title>
+  <link rel="stylesheet" href="admin-shell.css">
+  <link rel="manifest" href="admin-manifest.json">
+</head>
+<body>
+<script>window.ADMIN_PAGE = 'events';</script>
+
+<div class="admin-layout">
+  <aside class="admin-sidebar" aria-label="Admin navigation">
+    <div class="sidebar-logo">🍕 ARTISAN OVEN<small>Admin</small><span class="role-badge js-admin-role"></span></div>
+    <nav class="sidebar-nav" aria-label="Admin pages">
+      <a href="index.html"    data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+      <a href="orders.html"   data-page="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Orders</a>
+      <a href="kitchen.html"  data-page="kitchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Kitchen</a>
+      <a href="events.html"   data-page="events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Events</a>
+      <a href="money.html"    data-page="money" data-min-role="treasurer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v1m0 8v1M9.5 9.5C9.5 8.7 10.6 8 12 8s2.5.7 2.5 1.5S13.4 11 12 11s-2.5.7-2.5 1.5S10.6 16 12 16s2.5-.7 2.5-1.5"/></svg>Money</a>
+      <a href="comms.html"    data-page="comms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Comms</a>
+      <a href="settings.html" data-page="settings" data-min-role="owner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="../frontend/index.html" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View site</a>
+      <a href="#" id="logout-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Log out</a>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">☰</button>
+      <h1>Events</h1>
+      <span class="text-sm text-muted">Hi, <span class="js-admin-user"></span></span>
+    </header>
+
+    <div class="admin-content">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:var(--space-lg)">
+        <button class="btn btn-forest btn-sm" id="new-event-btn">+ New event</button>
+      </div>
+      <div id="events-list" aria-live="polite">
+        <p class="text-muted">Loading…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Event modal -->
+<dialog id="event-modal" style="border:none;border-radius:var(--radius-lg);padding:var(--space-xl);max-width:480px;width:90%">
+  <h2 style="margin-bottom:var(--space-lg)" id="event-modal-title">New Event</h2>
+  <form id="event-form">
+    <input type="hidden" id="ev-id">
+    <div class="form-group">
+      <label for="ev-title">Title *</label>
+      <input type="text" id="ev-title" required>
+    </div>
+    <div class="form-group">
+      <label for="ev-date">Event date *</label>
+      <input type="date" id="ev-date" required>
+    </div>
+    <div class="form-group">
+      <label for="ev-location">Location</label>
+      <input type="text" id="ev-location" placeholder="e.g. School hall">
+    </div>
+    <div class="form-group">
+      <label for="ev-desc">Description</label>
+      <textarea id="ev-desc" rows="3"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="ev-price">Price per head (pence)</label>
+      <input type="number" id="ev-price" min="0" placeholder="e.g. 800 for £8">
+    </div>
+    <div class="form-group">
+      <label for="ev-max">Max guests</label>
+      <input type="number" id="ev-max" min="1" placeholder="Leave blank for unlimited">
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;gap:var(--space-sm)">
+      <input type="checkbox" id="ev-open" style="margin:0">
+      <label for="ev-open" style="margin:0;font-weight:400;cursor:pointer">Ordering open</label>
+    </div>
+    <div class="flex gap-sm mt-lg" style="justify-content:flex-end">
+      <button type="button" class="btn btn-outline" id="cancel-ev-btn">Cancel</button>
+      <button type="submit" class="btn btn-forest" id="ev-submit-btn">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="admin-shell.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const { apiGet, apiPost, apiPatch, apiDelete } = window.aoAdmin;
+
+  async function loadEvents() {
+    const data = await apiGet('/events');
+    const events = data.events || data || [];
+    const el = document.getElementById('events-list');
+    if (!events.length) { el.innerHTML = '<p class="text-muted">No events yet.</p>'; return; }
+    el.innerHTML = events.map(renderEvent).join('');
+  }
+
+  function renderEvent(ev) {
+    const date = ev.eventDate ? new Date(ev.eventDate).toLocaleDateString('en-GB', { weekday:'short', year:'numeric', month:'short', day:'numeric' }) : '—';
+    return `
+      <div class="order-card">
+        <div class="order-card-header">
+          <strong>${escHtml(ev.title)}</strong>
+          <span class="badge ${ev.orderingOpen ? 'badge-success' : 'badge-muted'}">${ev.orderingOpen ? 'Open' : 'Closed'}</span>
+        </div>
+        <div class="order-card-body text-sm">
+          ${date}${ev.location ? ' · ' + escHtml(ev.location) : ''}
+          ${ev.pricePerHead ? ` · £${(ev.pricePerHead/100).toFixed(2)}/head` : ''}
+          ${ev.maxGuests ? ` · max ${ev.maxGuests}` : ''}
+        </div>
+        <div class="order-card-actions">
+          <button class="btn btn-outline btn-sm edit-ev-btn" data-id="${ev.eventId}">Edit</button>
+          <button class="btn btn-outline btn-sm toggle-ev-btn" data-id="${ev.eventId}" data-open="${ev.orderingOpen}">${ev.orderingOpen ? 'Close' : 'Open'} booking</button>
+          <button class="btn btn-outline btn-sm view-interest-btn" data-id="${ev.eventId}">Interest (${ev.interestCount || 0})</button>
+        </div>
+      </div>`;
+  }
+
+  // New event
+  document.getElementById('new-event-btn').addEventListener('click', () => {
+    document.getElementById('ev-id').value = '';
+    document.getElementById('event-form').reset();
+    document.getElementById('event-modal-title').textContent = 'New Event';
+    document.getElementById('event-modal').showModal();
+  });
+  document.getElementById('cancel-ev-btn').addEventListener('click', () => document.getElementById('event-modal').close());
+
+  document.addEventListener('click', async e => {
+    const edit = e.target.closest('.edit-ev-btn');
+    if (edit) {
+      const data = await apiGet(`/events/${edit.dataset.id}`);
+      document.getElementById('ev-id').value       = data.eventId;
+      document.getElementById('ev-title').value    = data.title || '';
+      document.getElementById('ev-date').value     = data.eventDate ? data.eventDate.slice(0,10) : '';
+      document.getElementById('ev-location').value = data.location || '';
+      document.getElementById('ev-desc').value     = data.description || '';
+      document.getElementById('ev-price').value    = data.pricePerHead || '';
+      document.getElementById('ev-max').value      = data.maxGuests || '';
+      document.getElementById('ev-open').checked   = !!data.orderingOpen;
+      document.getElementById('event-modal-title').textContent = 'Edit Event';
+      document.getElementById('event-modal').showModal();
+    }
+
+    const toggle = e.target.closest('.toggle-ev-btn');
+    if (toggle) {
+      const open = toggle.dataset.open === 'true';
+      await apiPatch(`/admin/events/${toggle.dataset.id}`, { orderingOpen: !open });
+      loadEvents();
+    }
+  });
+
+  document.getElementById('event-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = document.getElementById('ev-id').value;
+    const body = {
+      title:        document.getElementById('ev-title').value.trim(),
+      eventDate:    document.getElementById('ev-date').value,
+      location:     document.getElementById('ev-location').value.trim() || null,
+      description:  document.getElementById('ev-desc').value.trim()     || null,
+      pricePerHead: parseInt(document.getElementById('ev-price').value, 10) || null,
+      maxGuests:    parseInt(document.getElementById('ev-max').value, 10)   || null,
+      orderingOpen: document.getElementById('ev-open').checked,
+    };
+    const data = id
+      ? await apiPatch(`/admin/events/${id}`, body)
+      : await apiPost('/admin/events', body);
+    if (data.success || data.eventId) { document.getElementById('event-modal').close(); loadEvents(); }
+    else alert(data.message);
+  });
+
+  loadEvents();
+});
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Find &amp; Pay — Artisan Oven</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="site-logo">ARTISAN OVEN</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="order.html">Order</a>
+        <a href="payment.html" aria-current="page">Pay</a>
+        <a href="events.html">Events</a>
+        <a href="terms.html">Terms</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container" style="max-width:600px">
+      <h1 style="margin-top:var(--space-xl);margin-bottom:var(--space-xs)">Find your order</h1>
+      <p class="text-muted text-sm">Look up an order by code or email address.</p>
+
+      <!-- Lookup form -->
+      <form id="lookup-form" style="margin-top:var(--space-lg)" novalidate>
+        <div class="form-group">
+          <label for="lookup-input">Order code or email</label>
+          <input type="text" id="lookup-input" name="q" placeholder="e.g. L-0012 or jane@example.com"
+                 autocomplete="off" required>
+          <span class="form-hint">Order codes start with L-, E- or P-</span>
+        </div>
+        <button type="submit" class="btn btn-forest" id="lookup-btn">Look up</button>
+      </form>
+
+      <div id="lookup-error" class="alert alert-error hidden mt-md" role="alert"></div>
+
+      <!-- Results -->
+      <div id="lookup-results" class="hidden" style="margin-top:var(--space-xl)">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <span>© <span class="js-year"></span> Artisan Oven</span>
+        <span><a href="terms.html">Terms</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="site.js" defer></script>
+  <script>
+  const API = window.ORDER_API_URL || '/api';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.js-year').forEach(el => el.textContent = new Date().getFullYear());
+
+    // Auto-populate from order.html sessionStorage hand-off
+    try {
+      const last = JSON.parse(sessionStorage.getItem('ao_last_order') || 'null');
+      if (last?.orderId) {
+        document.getElementById('lookup-input').value = last.orderId;
+        doLookup(last.orderId);
+        return;
+      }
+    } catch {}
+
+    // Auto-populate from URL params
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q') || params.get('order') || params.get('code');
+    if (q) {
+      document.getElementById('lookup-input').value = q;
+      doLookup(q);
+    }
+
+    document.getElementById('lookup-form').addEventListener('submit', e => {
+      e.preventDefault();
+      doLookup(document.getElementById('lookup-input').value.trim());
+    });
+  });
+
+  async function doLookup(q) {
+    const errEl = document.getElementById('lookup-error');
+    const resEl = document.getElementById('lookup-results');
+    errEl.classList.add('hidden');
+    resEl.classList.add('hidden');
+
+    const btn = document.getElementById('lookup-btn');
+    btn.disabled   = true;
+    btn.textContent = 'Looking up…';
+
+    try {
+      const url = new URL(`${API}/orders/lookup`, location.origin);
+      url.searchParams.set('q', q);
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      if (!data.success && !data.orders) {
+        errEl.textContent = data.message || 'No order found.';
+        errEl.classList.remove('hidden');
+      } else {
+        const orders = data.orders || [data];
+        resEl.innerHTML = orders.map(renderOrder).join('');
+        resEl.classList.remove('hidden');
+        // Copy-button delegates
+        resEl.querySelectorAll('.copy-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            navigator.clipboard?.writeText(btn.dataset.copy)
+              .then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 1500); })
+              .catch(() => {});
+          });
+        });
+      }
+    } catch {
+      errEl.textContent = 'Network error — please try again.';
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.disabled   = false;
+      btn.textContent = 'Look up';
+    }
+  }
+
+  function statusLabel(s) {
+    if (s === 'paid')    return '<span class="badge badge-success">Paid</span>';
+    if (s === 'partial') return '<span class="badge badge-warning">Partial</span>';
+    return '<span class="badge badge-muted">Unpaid</span>';
+  }
+
+  function renderOrder(o) {
+    const items = (o.items || []).map(item =>
+      `<tr><td>${escHtml(item.topping)}</td><td>${escHtml(item.size)}</td><td>£${(item.pricePence / 100).toFixed(2)}</td></tr>`
+    ).join('');
+
+    const payRef = o.paymentReference
+      ? `<div class="mt-sm"><strong>Payment ref:</strong> ${escHtml(o.paymentReference)}
+         <button class="btn btn-outline btn-sm copy-btn" data-copy="${escHtml(o.paymentReference)}" style="margin-left:var(--space-sm)">Copy</button></div>`
+      : '';
+
+    const paypalBtn = o.paypalLink
+      ? `<a href="${escHtml(o.paypalLink)}" class="btn btn-forest mt-md" target="_blank" rel="noopener">Pay online via PayPal</a>`
+      : '';
+
+    return `
+      <div class="order-result-card" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);margin-bottom:var(--space-md)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm)">
+          <h2 style="font-size:1.3rem;letter-spacing:.06em">${escHtml(o.orderId)}</h2>
+          ${statusLabel(o.paymentStatus)}
+        </div>
+        <p class="text-muted text-sm mt-sm">${escHtml(o.customerName)} · ${escHtml(o.serviceTitle || '')}</p>
+        <table class="order-items-table mt-md" style="width:100%;border-collapse:collapse;font-size:.9rem">
+          <thead><tr><th style="text-align:left;padding:4px 0;color:var(--text-400);font-weight:600">Topping</th><th style="text-align:left;padding:4px 0;color:var(--text-400);font-weight:600">Size</th><th style="text-align:right;padding:4px 0;color:var(--text-400);font-weight:600">Price</th></tr></thead>
+          <tbody>${items}</tbody>
+          <tfoot><tr style="border-top:2px solid var(--border)"><td colspan="2" style="padding-top:8px;font-weight:700">Total</td><td style="padding-top:8px;text-align:right;font-weight:700">£${(o.totalPence / 100).toFixed(2)}</td></tr></tfoot>
+        </table>
+        ${o.discountCode ? `<p class="text-sm text-muted mt-sm">Discount: ${escHtml(o.discountCode)} (−£${((o.discountPence || 0) / 100).toFixed(2)})</p>` : ''}
+        ${payRef}
+        <div class="payment-info mt-md" style="background:var(--cream-800);border-radius:var(--radius-md);padding:var(--space-md);font-size:.9rem">
+          <strong>How to pay</strong>
+          <ul style="margin:.5rem 0 0;padding-left:1.4rem">
+            <li>Cash at collection — just say your order code</li>
+            <li>Bank transfer — ask staff for details</li>
+            ${o.paypalLink ? '<li>Pay online via the button below</li>' : ''}
+          </ul>
+        </div>
+        ${paypalBtn}
+      </div>`;
+  }
+
+  function escHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  </script>
+</body>
+</html>

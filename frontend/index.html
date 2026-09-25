@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Artisan Oven — Student Pizza</title>
+  <meta name="description" content="Order wood-fired pizza made by students at school. Live availability, easy ordering, and flexible payment.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <!-- ── Service notice banner ─────────────────────────────────────────────── -->
+  <div class="notice-banner" id="notice-banner">
+    Next service: <strong>Tuesday lunchtimes — check back for availability</strong>
+  </div>
+
+  <!-- ── Header ─────────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-logo">ARTISAN OVEN</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="order.html">Order</a>
+        <a href="payment.html">Pay</a>
+        <a href="events.html">Events</a>
+        <a href="terms.html">Terms</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
+  <section class="hero" aria-label="Welcome">
+    <div class="container">
+      <h1>Wood-Fired Pizza,<br>Made by Students</h1>
+      <p class="tagline">Every Tuesday. Fresh dough, fresh toppings, real fire.</p>
+      <div class="hero-underline" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- ── Main ───────────────────────────────────────────────────────────────── -->
+  <main>
+    <div class="container">
+
+      <!-- Availability tracker -->
+      <div id="availability-tracker" class="availability-tracker" aria-live="polite" aria-label="Availability">
+        <p class="tracker-title" id="tracker-title">Loading…</p>
+        <div id="tracker-pill" class="status-pill open" role="status">Checking…</div>
+        <div class="progress-track" aria-hidden="true">
+          <div id="tracker-bar" class="progress-bar" style="width:0%"></div>
+        </div>
+        <p class="tracker-footer" id="tracker-footer"></p>
+        <p class="text-sm text-muted mt-sm" id="capacity-disclaimer">
+          Capacity is measured in whole-pizza equivalents (½ pizza = 0.5, ¼ = 0.25).
+        </p>
+      </div>
+
+      <!-- Choice cards -->
+      <div class="choice-cards" role="group" aria-label="What would you like to do?">
+        <a href="order.html" class="choice-card primary js-order-btn" id="order-btn" aria-label="Order a pizza">
+          <!-- Pizza slice icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2L2 20h20L12 2z"/>
+            <circle cx="12" cy="15" r="1" fill="currentColor"/>
+            <circle cx="9"  cy="11" r=".8" fill="currentColor"/>
+            <circle cx="15" cy="11" r=".8" fill="currentColor"/>
+          </svg>
+          I want to order
+        </a>
+        <a href="payment.html" class="choice-card" aria-label="Find your order and pay">
+          <!-- Coin icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 7v1m0 8v1M9.5 9.5C9.5 8.7 10.6 8 12 8s2.5.7 2.5 1.5S13.4 11 12 11s-2.5.7-2.5 1.5S10.6 16 12 16s2.5-.7 2.5-1.5"/>
+          </svg>
+          I need to pay
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h5>Artisan Oven</h5>
+          <ul>
+            <li><a href="order.html">Order pizza</a></li>
+            <li><a href="payment.html">Find &amp; pay</a></li>
+            <li><a href="events.html">Special events</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h5>Info</h5>
+          <ul>
+            <li><a href="terms.html">Terms &amp; conditions</a></li>
+            <li><a href="mailto:louis@benne.co.uk">Contact us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h5>School Lunches</h5>
+          <ul>
+            <li>Every Tuesday</li>
+            <li>Collection at lunchtime</li>
+            <li>Orders close Sunday 9 pm</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span class="js-year"></span> Artisan Oven — Marlow, Louis &amp; Quinton</span>
+        <span><a href="terms.html">Terms</a> · <a href="admin/index.html">Admin</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- WhatsApp floating link -->
+  <a href="https://wa.me/447911123456" class="wa-float" target="_blank" rel="noopener" aria-label="WhatsApp us">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    WhatsApp
+  </a>
+
+  <script src="site.js" defer></script>
+</body>
+</html>

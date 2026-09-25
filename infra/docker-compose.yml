@@ -1,0 +1,101 @@
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       artisanoven
+      POSTGRES_USER:     artisanoven
+      POSTGRES_PASSWORD: ${DB_PASS:?Set DB_PASS in .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ../backend/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U artisanoven"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  # ── Redis (job queue + Socket.IO adapter) ────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [internal]
+
+  # ── Backend API ───────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DB_HOST:   db
+      DB_PORT:   "5432"
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [internal, web]
+    labels:
+      caddy: artisanoven.shop
+      caddy.handle_path: /api/*
+      caddy.handle_path.reverse_proxy: backend:3000
+
+  # ── Caddy (reverse proxy + auto HTTPS) ───────────────────────────────────────
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - ../frontend:/srv/frontend:ro
+      - ../admin:/srv/admin:ro
+    networks: [web]
+    environment:
+      CADDY_INGRESS_NETWORKS: web
+
+  # ── Nightly backup ────────────────────────────────────────────────────────────
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${DB_PASS}
+    env_file: ../.env
+    volumes:
+      - ./backup.sh:/backup.sh:ro
+      - backup_data:/backups
+    entrypoint: ["/bin/sh", "-c", "while true; do sleep 86400; sh /backup.sh; done"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal]
+
+networks:
+  internal:
+  web:
+    external: true    # pre-created: docker network create web
+
+volumes:
+  db_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+  backup_data:

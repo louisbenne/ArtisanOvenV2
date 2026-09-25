@@ -1,0 +1,13 @@
+{
+  "name": "Artisan Oven Admin",
+  "short_name": "AO Admin",
+  "description": "Admin panel for Artisan Oven pizza ordering system",
+  "start_url": "/admin/index.html",
+  "display": "standalone",
+  "background_color": "#1a2e1a",
+  "theme_color": "#1a2e1a",
+  "icons": [
+    { "src": "../frontend/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "../frontend/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

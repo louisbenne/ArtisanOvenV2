@@ -1,0 +1,249 @@
+/* Admin app shell — sidebar layout + page chrome.
+   Imports style.css for the shared brand tokens. */
+@import url('../frontend/style.css');
+
+/* ── Layout ──────────────────────────────────────────────────────────────────*/
+.admin-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100dvh;
+}
+@media (max-width: 700px) {
+  .admin-layout { grid-template-columns: 1fr; }
+  .admin-sidebar { display: none; }
+  .admin-sidebar.open { display: flex; }
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────────*/
+.admin-sidebar {
+  background: var(--forest-800);
+  color: var(--forest-100);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-lg) 0;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.sidebar-logo {
+  font-family: var(--font-brand);
+  font-size: 1rem;
+  letter-spacing: .08em;
+  color: var(--cream-50);
+  padding: 0 var(--space-lg) var(--space-lg);
+  border-bottom: 1px solid var(--forest-600);
+  margin-bottom: var(--space-md);
+}
+.sidebar-logo small {
+  display: block;
+  font-family: var(--font-body);
+  font-size: .7rem;
+  color: var(--forest-400);
+  letter-spacing: .04em;
+  margin-top: 2px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 var(--space-sm);
+}
+
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px var(--space-md);
+  border-radius: var(--radius-md);
+  color: var(--forest-100);
+  text-decoration: none;
+  font-size: .9rem;
+  transition: background .12s, color .12s;
+  position: relative;
+}
+.sidebar-nav a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.sidebar-nav a.active {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-weight: 600;
+}
+.sidebar-nav a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .85; }
+.sidebar-nav a.active svg { opacity: 1; }
+
+/* Role badge — shown next to logo */
+.role-badge {
+  display: inline-block;
+  font-size: .65rem;
+  font-family: var(--font-body);
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.15);
+  color: var(--cream-50);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.sidebar-bottom {
+  padding: var(--space-sm) var(--space-sm) 0;
+  border-top: 1px solid var(--forest-600);
+  margin-top: var(--space-md);
+}
+.sidebar-bottom a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px var(--space-md);
+  border-radius: var(--radius-md);
+  color: var(--forest-400);
+  text-decoration: none;
+  font-size: .85rem;
+}
+.sidebar-bottom a:hover { color: var(--cream-50); }
+
+/* ── Admin main content ───────────────────────────────────────────────────────*/
+.admin-main {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  min-height: 100dvh;
+}
+
+.admin-topbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-sm) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.admin-topbar h1 {
+  font-size: 1.05rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+/* Mobile menu toggle */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-xs);
+  color: var(--text-700);
+}
+@media (max-width: 700px) { .mobile-menu-btn { display: block; } }
+
+.admin-content {
+  flex: 1;
+  padding: var(--space-xl) var(--space-lg);
+  max-width: 1100px;
+}
+
+/* ── Metric cards ─────────────────────────────────────────────────────────────*/
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+.metric-card .metric-label {
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-400);
+  margin-bottom: var(--space-xs);
+}
+.metric-card .metric-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-900);
+  line-height: 1.1;
+}
+.metric-card .metric-hint {
+  font-size: .8rem;
+  color: var(--text-400);
+  margin-top: 2px;
+}
+
+/* ── Order cards ──────────────────────────────────────────────────────────────*/
+.order-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-sm);
+  transition: box-shadow .12s;
+}
+.order-card:hover { box-shadow: var(--shadow-md); }
+.order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.order-card-body { margin-top: var(--space-sm); font-size: .9rem; color: var(--text-700); }
+.order-card-actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+/* ── Search + filter bar ──────────────────────────────────────────────────────*/
+.filter-bar {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+.filter-bar input[type="search"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────────────*/
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9rem;
+}
+.data-table th {
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-400);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--cream-800);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--cream-800); }

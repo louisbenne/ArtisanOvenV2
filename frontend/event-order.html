@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Book Event — Artisan Oven</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="site-logo">ARTISAN OVEN</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="order.html">Order</a>
+        <a href="payment.html">Pay</a>
+        <a href="events.html" aria-current="page">Events</a>
+        <a href="terms.html">Terms</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container" style="max-width:600px">
+
+      <div id="event-info" style="margin-top:var(--space-xl)">
+        <p class="text-muted">Loading event…</p>
+      </div>
+
+      <div id="event-form-wrap" class="hidden" style="margin-top:var(--space-lg)">
+        <form id="event-order-form" novalidate>
+          <div class="form-group">
+            <label for="name">Full name <span aria-hidden="true">*</span></label>
+            <input type="text" id="name" name="name" autocomplete="name" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email address <span aria-hidden="true">*</span></label>
+            <input type="email" id="email" name="email" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="guests">Number of guests <span aria-hidden="true">*</span></label>
+            <input type="number" id="guests" name="guests" min="1" max="50" value="1" required>
+          </div>
+          <div class="form-group">
+            <label for="notes">Notes <span class="text-muted text-sm">(optional)</span></label>
+            <textarea id="notes" name="notes" rows="2" placeholder="Dietary requirements, requests…" maxlength="300"></textarea>
+          </div>
+          <div id="event-total" style="margin:var(--space-lg) 0;padding:var(--space-md) var(--space-lg);background:var(--forest-800);color:var(--cream-50);border-radius:var(--radius-lg);display:flex;justify-content:space-between;align-items:center">
+            <span>Total</span>
+            <span id="total-display" style="font-size:1.4rem;font-weight:700">—</span>
+          </div>
+          <div id="form-error" class="alert alert-error hidden" role="alert"></div>
+          <button type="submit" class="btn btn-forest btn-full" id="submit-btn">Reserve place</button>
+          <p class="text-sm text-muted mt-sm" style="text-align:center">
+            By booking you agree to our <a href="terms.html">terms &amp; conditions</a>.
+          </p>
+        </form>
+
+        <div id="event-confirmation" class="hidden" style="text-align:center;padding:var(--space-xl) 0">
+          <div style="font-size:3rem;margin-bottom:var(--space-md)">🎉</div>
+          <h2 class="font-brand">Booking confirmed!</h2>
+          <p class="text-muted mt-sm">Your booking code is</p>
+          <div style="font-size:2rem;font-weight:800;letter-spacing:.1em;color:var(--forest-800);margin:var(--space-md) 0" id="confirm-code"></div>
+          <p class="text-sm text-muted">Check your email for confirmation. Payment details will follow.</p>
+          <a href="events.html" class="btn btn-outline mt-lg">Back to events</a>
+        </div>
+      </div>
+
+      <div id="event-closed" class="hidden" style="margin-top:var(--space-xl)">
+        <div class="alert alert-warning">Booking for this event is currently closed.</div>
+        <a href="events.html" class="btn btn-outline mt-md">See all events</a>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <span>© <span class="js-year"></span> Artisan Oven</span>
+        <span><a href="terms.html">Terms</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="site.js" defer></script>
+  <script>
+  const API = window.ORDER_API_URL || '/api';
+  let eventData = null;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.querySelectorAll('.js-year').forEach(el => el.textContent = new Date().getFullYear());
+    const params  = new URLSearchParams(location.search);
+    const eventId = params.get('event');
+    if (!eventId) { location.href = 'events.html'; return; }
+    await loadEvent(eventId);
+    document.getElementById('event-order-form').addEventListener('submit', submitBooking);
+    document.getElementById('guests').addEventListener('input', updateTotal);
+  });
+
+  async function loadEvent(eventId) {
+    try {
+      const res  = await fetch(`${API}/events/${eventId}`);
+      eventData  = await res.json();
+      if (!eventData.eventId) throw new Error('not found');
+    } catch {
+      document.getElementById('event-info').innerHTML = '<p class="text-muted">Event not found.</p>';
+      return;
+    }
+
+    document.getElementById('event-info').innerHTML = `
+      <h1 style="margin-bottom:var(--space-xs)">${escHtml(eventData.title)}</h1>
+      ${eventData.eventDate ? `<p class="text-muted text-sm">${new Date(eventData.eventDate).toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>` : ''}
+      ${eventData.description ? `<p style="margin-top:var(--space-sm)">${escHtml(eventData.description)}</p>` : ''}
+    `;
+
+    if (!eventData.orderingOpen) {
+      document.getElementById('event-closed').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('event-form-wrap').classList.remove('hidden');
+    updateTotal();
+  }
+
+  function updateTotal() {
+    if (!eventData?.pricePerHead) return;
+    const guests = parseInt(document.getElementById('guests').value, 10) || 1;
+    const total  = eventData.pricePerHead * guests;
+    document.getElementById('total-display').textContent = `£${(total / 100).toFixed(2)}`;
+  }
+
+  async function submitBooking(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('form-error');
+    errEl.classList.add('hidden');
+
+    const payload = {
+      eventId:      eventData.eventId,
+      customerName: document.getElementById('name').value.trim(),
+      email:        document.getElementById('email').value.trim(),
+      guestCount:   parseInt(document.getElementById('guests').value, 10),
+      notes:        document.getElementById('notes').value.trim() || null,
+      submissionId: crypto.randomUUID(),
+    };
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Booking…';
+
+    try {
+      const res  = await fetch(`${API}/orders`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ ...payload, orderType: 'event' }),
+      });
+      const data = await res.json();
+      if (data.success || data.orderId) {
+        document.getElementById('confirm-code').textContent = data.orderId;
+        document.getElementById('event-order-form').classList.add('hidden');
+        document.getElementById('event-confirmation').classList.remove('hidden');
+      } else {
+        errEl.textContent = data.message || 'Something went wrong.';
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Reserve place';
+      }
+    } catch {
+      errEl.textContent = 'Network error — please try again.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Reserve place';
+    }
+  }
+
+  function escHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  </script>
+</body>
+</html>
