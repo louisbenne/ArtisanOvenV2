@@ -1,0 +1,9 @@
+{
+  "build": {
+    "builder": "dockerfile",
+    "context": "./backend"
+  },
+  "deploy": {
+    "startCommand": "node server.js"
+  }
+}

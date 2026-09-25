@@ -7,6 +7,7 @@ const http       = require('http');
 const { Server } = require('socket.io');
 const cors       = require('cors');
 
+const path           = require('path');
 const routes         = require('./src/routes');
 const { errorHandler } = require('./src/middleware/errorHandler');
 const { initSockets }  = require('./src/sockets');
@@ -38,11 +39,23 @@ app.use('/api/webhooks', express.raw({ type: '*/*' }), (req, _res, next) => {
 
 app.use(express.json({ limit: '1mb' }));
 
+// ── Static files (Railway: single container serves frontend + admin) ─────────
+app.use('/admin', express.static(path.join(__dirname, '../admin')));
+app.use('/frontend', express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../frontend')));
+
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api', routes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+
+// ── SPA fallback ──────────────────────────────────────────────────────────────
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api/') && req.path !== '/health') {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  }
+});
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.use(errorHandler);
