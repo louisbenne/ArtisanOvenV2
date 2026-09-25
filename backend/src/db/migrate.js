@@ -16,6 +16,7 @@ async function migrate() {
 }
 
 migrate().catch(err => {
-  console.error('Migration failed:', err.message);
+  console.error('Migration failed:', err.message || err);
+  if (err.errors) err.errors.forEach(e => console.error(' -', e.message || e));
   process.exit(1);
 });
