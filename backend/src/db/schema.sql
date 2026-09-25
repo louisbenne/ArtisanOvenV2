@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS customers (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS customers_email_idx ON customers (lower(email));
+CREATE UNIQUE INDEX IF NOT EXISTS customers_email_idx ON customers (lower(email));
 
 -- ─── Ordering Sessions ────────────────────────────────────────────────────────
 -- Replaces v1's global serviceDate/maxPizzas settings and the "Start New Week"
@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   child_name       TEXT,
   child_class      TEXT,
   size             TEXT    NOT NULL CHECK (size IN ('12inch','Half12inch','Quarter12inch')),
+  topping          TEXT,
   unit_price_pence INTEGER NOT NULL,
   prepared         BOOLEAN NOT NULL DEFAULT FALSE,   -- kitchen tick-off (a real column, not localStorage)
   prepared_at      TIMESTAMPTZ

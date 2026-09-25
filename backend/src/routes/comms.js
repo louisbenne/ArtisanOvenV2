@@ -20,10 +20,15 @@ async function log(req, res) {
 }
 
 async function send(req, res) {
-  const { orderId, template, channel } = req.body;
+  const { orderId, template } = req.body;
   if (!orderId || !template) throw new HttpError(400, 'orderId and template required.');
 
-  await notifyOrder(template, parseInt(orderId, 10));
+  const [order] = await sql`
+    SELECT id FROM orders WHERE public_order_code = ${orderId} AND NOT is_deleted
+  `;
+  if (!order) throw new HttpError(404, 'Order not found.');
+
+  await notifyOrder(template, order.id);
   res.json({ success: true });
 }
 

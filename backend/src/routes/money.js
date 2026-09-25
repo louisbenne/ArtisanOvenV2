@@ -7,11 +7,16 @@ const { incrementUsage } = require('../services/discountService');
 
 // ── Record a payment or refund ────────────────────────────────────────────────
 async function recordPayment(req, res) {
-  const { orderId, amountPence, method, reference, note } = req.body;
-  if (!orderId || amountPence === undefined) throw new HttpError(400, 'orderId and amountPence required.');
+  const { orderId: orderCode, amountPence, method, reference, note } = req.body;
+  if (!orderCode || amountPence === undefined) throw new HttpError(400, 'orderId and amountPence required.');
 
-  const [order] = await sql`SELECT id, total_pence, discount_code FROM orders WHERE id = ${orderId}`;
+  const [order] = await sql`
+    SELECT id, total_pence, discount_code FROM orders
+    WHERE public_order_code = ${orderCode} AND NOT is_deleted
+  `;
   if (!order) throw new HttpError(404, 'Order not found.');
+
+  const orderId = order.id;
 
   const [payment] = await sql`
     INSERT INTO payments (order_id, amount_pence, method, reference, source, recorded_by, note)
@@ -35,7 +40,7 @@ async function recordPayment(req, res) {
 
   await logAudit({ adminUserId: req.admin.id, action: 'record_payment',
                    targetTable: 'payments', targetId: String(payment.id),
-                   details: { orderId, amountPence, method } });
+                   details: { orderId: orderCode, amountPence, method } });
 
   res.status(201).json({ success: true, payment, paymentStatus: status });
 }

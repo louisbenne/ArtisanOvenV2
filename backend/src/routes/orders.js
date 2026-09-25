@@ -6,16 +6,16 @@ const { logAudit }  = require('../services/auditService');
 const { applyDiscount } = require('../services/discountService');
 const { notifyOrder }   = require('../services/notificationService');
 
-const PRICE_PENCE = { '12inch': 800, 'Half12inch': 500, 'Quarter12inch': 300 };
-const CAPACITY    = { '12inch': 1.0, 'Half12inch': 0.5, 'Quarter12inch': 0.25 };
+const PRICE_PENCE  = { '12inch': 800, 'Half12inch': 500, 'Quarter12inch': 300 };
+const CAPACITY     = { '12inch': 1.0, 'Half12inch': 0.5, 'Quarter12inch': 0.25 };
+const SIZE_ALIAS   = { Half: 'Half12inch', Quarter: 'Quarter12inch' };
+const normalizeSize = s => SIZE_ALIAS[s] || s;
 
 // ── Public: create a lunch or event order ─────────────────────────────────────
 async function create(req, res) {
   const {
     orderType = 'lunch',
     eventId,
-    payerName,
-    payerEmail,
     payerPhone,
     whatsappOptIn = false,
     items = [],
@@ -28,30 +28,32 @@ async function create(req, res) {
     termsAcceptedAt,
   } = req.body;
 
+  const payerName  = req.body.payerName  || req.body.customerName;
+  const payerEmail = req.body.payerEmail || req.body.email;
+
   if (!['lunch','event'].includes(orderType)) throw new HttpError(400, 'Invalid order type.');
-  if (!payerName)   throw new HttpError(400, 'payerName required.');
-  if (!payerEmail)  throw new HttpError(400, 'payerEmail required.');
+  if (!payerName)   throw new HttpError(400, 'Name required.');
+  if (!payerEmail)  throw new HttpError(400, 'Email required.');
   if (!items.length) throw new HttpError(400, 'At least one pizza item required.');
-  if (!termsAcceptedAt) throw new HttpError(400, 'Terms must be accepted.');
-  if (!['bank_transfer','paypal','cash'].includes(paymentMethod)) {
+  if (paymentMethod && !['bank_transfer','paypal','cash'].includes(paymentMethod)) {
     throw new HttpError(400, 'Invalid paymentMethod.');
   }
 
   for (const item of items) {
-    if (!PRICE_PENCE[item.size]) throw new HttpError(400, `Invalid pizza size: ${item.size}`);
+    if (!PRICE_PENCE[normalizeSize(item.size)]) throw new HttpError(400, `Invalid pizza size: ${item.size}`);
   }
 
   // Idempotency check: reject if this submissionId was seen in the last 10 minutes.
   if (submissionId) {
     const [dupe] = await sql`
-      SELECT id FROM orders
+      SELECT id, public_order_code FROM orders
       WHERE  notes LIKE ${`%sub:${submissionId}%`}
         AND  created_at > now() - interval '10 minutes'
     `;
-    if (dupe) return res.json({ success: true, duplicate: true, orderId: dupe.id });
+    if (dupe) return res.json({ success: true, duplicate: true, orderId: dupe.public_order_code });
   }
 
-  const subtotal = items.reduce((s, i) => s + PRICE_PENCE[i.size], 0);
+  const subtotal = items.reduce((s, i) => s + PRICE_PENCE[normalizeSize(i.size)], 0);
   const discount = discountCode ? await applyDiscount(discountCode, subtotal) : { discountPence: 0, finalPence: subtotal };
   const total    = discount.finalPence;
 
@@ -83,7 +85,7 @@ async function create(req, res) {
         throw new HttpError(409, 'Ordering deadline has passed.');
       }
 
-      const incomingCapacity = items.reduce((s, i) => s + CAPACITY[i.size], 0);
+      const incomingCapacity = items.reduce((s, i) => s + CAPACITY[normalizeSize(i.size)], 0);
       const remaining = session.max_pizzas - parseFloat(session.current_pizzas);
       if (incomingCapacity > remaining) {
         throw new HttpError(409, `Only ${remaining} pizza units remaining — cannot place this order.`);
@@ -122,7 +124,7 @@ async function create(req, res) {
       ) VALUES (
         ${publicCode}, ${orderType}, ${sessionId}, ${eventId ?? null}, ${customer.id},
         ${subtotal}, ${discount.code ?? null}, ${discount.discountPence}, ${total},
-        ${paymentMethod}, ${!!allergyFlag}, ${allergyNotes ?? null},
+        ${paymentMethod ?? null}, ${!!allergyFlag}, ${allergyNotes ?? null},
         ${[notes, submissionId ? `sub:${submissionId}` : null].filter(Boolean).join(' | ') || null},
         ${termsAcceptedAt}
       )
@@ -131,10 +133,11 @@ async function create(req, res) {
 
     // 5. Insert order items.
     for (const item of items) {
+      const sz = normalizeSize(item.size);
       await sql`
-        INSERT INTO order_items (order_id, child_name, child_class, size, unit_price_pence)
+        INSERT INTO order_items (order_id, child_name, child_class, size, topping, unit_price_pence)
         VALUES (${order.id}, ${item.childName ?? null}, ${item.childClass ?? null},
-                ${item.size}, ${PRICE_PENCE[item.size]})
+                ${sz}, ${item.topping ?? null}, ${PRICE_PENCE[sz]})
       `;
     }
 
@@ -162,8 +165,8 @@ async function createParent(req, res) {
 
 // ── Public: order lookup ──────────────────────────────────────────────────────
 async function lookup(req, res) {
-  const { query, token } = req.query;
-  if (!query) throw new HttpError(400, 'query required.');
+  const { q, token } = req.query;
+  if (!q) throw new HttpError(400, 'q required.');
 
   let order;
 
@@ -185,8 +188,8 @@ async function lookup(req, res) {
       FROM   orders    o
       JOIN   customers c ON c.id = o.customer_id
       WHERE  (
-        lower(c.email) = ${query.toLowerCase()}
-        OR upper(o.public_order_code) = ${query.toUpperCase()}
+        lower(c.email) = ${q.toLowerCase()}
+        OR upper(o.public_order_code) = ${q.toUpperCase()}
       )
       AND NOT o.is_deleted
       ORDER BY o.created_at DESC

@@ -26,7 +26,7 @@ router.get( '/events',                 events.list);
 router.get( '/events/:id',             events.get);
 router.post('/events/:id/interest',    rateLimit({ max: 5 }), events.registerInterest);
 router.post('/orders',                 rateLimit({ max: 10 }), orders.create);
-router.post('/auth/parent',            rateLimit({ max: 10 }), auth.parentAuth);
+router.post('/parent/auth',            rateLimit({ max: 10 }), auth.parentAuth);
 router.post('/parent-orders',          rateLimit({ max: 10 }), orders.createParent);
 
 // ── Webhooks (externally called — verified by signature, not admin token) ────
@@ -53,6 +53,7 @@ router.get('/admin/money/export',            requireAuth('treasurer'), money.exp
 
 // ── Admin: Kitchen ────────────────────────────────────────────────────────────
 router.get(  '/admin/kitchen/board',         requireAuth('kitchen'),   kitchen.getBoard);
+router.post( '/admin/kitchen/tick',          requireAuth('kitchen'),   kitchen.tick);
 router.patch('/admin/kitchen/items/:id',     requireAuth('kitchen'),   kitchen.tickItem);
 
 // ── Admin: Events ─────────────────────────────────────────────────────────────

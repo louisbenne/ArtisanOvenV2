@@ -25,9 +25,9 @@ async function getCurrent(_req, res) {
     LEFT JOIN orders     o ON o.session_id = s.id AND NOT o.is_deleted
     LEFT JOIN order_items i ON i.order_id  = o.id
     WHERE s.archived_at IS NULL
+    GROUP BY s.id
     ORDER BY s.created_at DESC
     LIMIT 1
-    GROUP BY s.id
   `;
 
   if (!session) {

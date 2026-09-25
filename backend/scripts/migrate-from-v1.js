@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * migrate-from-v1.js — stub for migrating data from the v1 Google Sheets export.
+ * migrate-from-v1.js — import a v1 Google Sheets CSV export into the v2 database.
  *
  * Usage:
  *   node scripts/migrate-from-v1.js --csv path/to/orders.csv
  *
- * The v1 export has columns: [Timestamp, Name, Email, Size, Topping, Paid, Notes]
- * This script reads that CSV and inserts rows into the v2 database.
- *
+ * Expected v1 columns: [Timestamp, Name, Email, Size, Topping, Paid, Notes]
  * Run AFTER the v2 schema has been migrated (npm run migrate).
  */
 
@@ -16,7 +14,7 @@ const fs   = require('fs');
 const path = require('path');
 const sql  = require('../src/db');
 
-const args = process.argv.slice(2);
+const args     = process.argv.slice(2);
 const csvIndex = args.indexOf('--csv');
 if (csvIndex === -1 || !args[csvIndex + 1]) {
   console.error('Usage: node scripts/migrate-from-v1.js --csv <path>');
@@ -30,8 +28,8 @@ if (!fs.existsSync(csvPath)) {
 }
 
 async function run() {
-  const raw  = fs.readFileSync(csvPath, 'utf8');
-  const lines = raw.trim().split('\n');
+  const raw    = fs.readFileSync(csvPath, 'utf8');
+  const lines  = raw.trim().split('\n');
   const header = lines.shift().split(',').map(h => h.trim().replace(/"/g, ''));
   console.log('Headers:', header);
 
@@ -39,80 +37,80 @@ async function run() {
   let skipped  = 0;
 
   await sql.begin(async sql => {
-    // Ensure a legacy migration session exists
+    // Ensure a legacy migration session exists.
     let [session] = await sql`
-      SELECT session_id FROM ordering_sessions WHERE service_title = 'V1 Migration Import'
+      SELECT id FROM ordering_sessions WHERE service_title = 'V1 Migration Import'
     `;
     if (!session) {
       [session] = await sql`
         INSERT INTO ordering_sessions (service_title, service_date, ordering_open, max_pizzas)
         VALUES ('V1 Migration Import', CURRENT_DATE, false, 9999)
-        RETURNING session_id
+        RETURNING id
       `;
     }
-    const sessionId = session.session_id;
-
-    // Ensure L counter exists
-    await sql`
-      INSERT INTO order_code_counters (order_type, next_val)
-      VALUES ('L', 1)
-      ON CONFLICT (order_type) DO NOTHING
-    `;
+    const sessionId = session.id;
 
     for (const line of lines) {
       const cols = parseCsvLine(line);
       if (cols.length < 4) { skipped++; continue; }
 
-      // Best-effort column mapping — adjust indices to match the actual v1 export
-      const name    = cols[header.indexOf('Name')]      || cols[1] || '';
-      const email   = cols[header.indexOf('Email')]     || cols[2] || '';
-      const size    = cols[header.indexOf('Size')]      || cols[3] || '12inch';
-      const topping = cols[header.indexOf('Topping')]   || cols[4] || 'Margherita';
-      const paid    = (cols[header.indexOf('Paid')]     || cols[5] || '').toLowerCase();
-      const notes   = cols[header.indexOf('Notes')]     || cols[6] || '';
+      const name    = cols[header.indexOf('Name')]    ?? cols[1] ?? '';
+      const email   = cols[header.indexOf('Email')]   ?? cols[2] ?? '';
+      const size    = cols[header.indexOf('Size')]    ?? cols[3] ?? '12inch';
+      const topping = cols[header.indexOf('Topping')] ?? cols[4] ?? '';
+      const paid    = (cols[header.indexOf('Paid')]   ?? cols[5] ?? '').toLowerCase();
+      const notes   = cols[header.indexOf('Notes')]   ?? cols[6] ?? '';
 
       if (!name || !email) { skipped++; continue; }
 
-      // Upsert customer
+      // Normalise size aliases from v1 free-text.
+      const sizeMap = { half: 'Half12inch', quarter: 'Quarter12inch', '12inch': '12inch' };
+      const normSize = sizeMap[size.toLowerCase()] || '12inch';
+      const priceMap = { '12inch': 800, 'Half12inch': 450, 'Quarter12inch': 250 };
+      const pricePence = priceMap[normSize];
+
+      // Upsert customer.
       const [customer] = await sql`
-        INSERT INTO customers (email, name)
-        VALUES (${email.toLowerCase().trim()}, ${name.trim()})
-        ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name
-        RETURNING customer_id
+        INSERT INTO customers (name, email)
+        VALUES (${name.trim()}, ${email.toLowerCase().trim()})
+        ON CONFLICT (lower(email)) DO UPDATE SET name = EXCLUDED.name
+        RETURNING id
       `;
 
-      // Atomically get next order code
+      // Atomically allocate next lunch order code.
       const [counter] = await sql`
         UPDATE order_code_counters
         SET next_val = next_val + 1
-        WHERE order_type = 'L'
+        WHERE order_type = 'lunch'
         RETURNING next_val - 1 AS seq
       `;
-      const orderId = `L-${String(counter.seq).padStart(4, '0')}`;
-
-      const priceMap = { '12inch': 800, 'Half': 450, 'Quarter': 250 };
-      const pricePence = priceMap[size] || 800;
+      const publicCode = `L-${String(counter.seq).padStart(4, '0')}`;
+      const isPaid = paid === 'yes' || paid === 'true' || paid === '1';
 
       const [order] = await sql`
-        INSERT INTO orders (order_id, session_id, customer_id, order_type, total_pence, payment_status, notes)
+        INSERT INTO orders (
+          public_order_code, order_type, session_id, customer_id,
+          subtotal_pence, discount_pence, total_pence,
+          payment_status, notes
+        )
         VALUES (
-          ${orderId}, ${sessionId}, ${customer.customer_id},
-          'lunch', ${pricePence},
-          ${paid === 'yes' || paid === 'true' || paid === '1' ? 'paid' : 'unpaid'},
+          ${publicCode}, 'lunch', ${sessionId}, ${customer.id},
+          ${pricePence}, 0, ${pricePence},
+          ${isPaid ? 'paid' : 'unpaid'},
           ${notes.trim() || null}
         )
-        RETURNING order_id
+        RETURNING id
       `;
 
       await sql`
-        INSERT INTO order_items (order_id, size, topping, price_pence)
-        VALUES (${order.order_id}, ${size}, ${topping}, ${pricePence})
+        INSERT INTO order_items (order_id, size, topping, unit_price_pence)
+        VALUES (${order.id}, ${normSize}, ${topping.trim() || null}, ${pricePence})
       `;
 
-      if (paid === 'yes' || paid === 'true' || paid === '1') {
+      if (isPaid) {
         await sql`
-          INSERT INTO payments (order_id, amount_pence, method, notes)
-          VALUES (${order.order_id}, ${pricePence}, 'cash', 'migrated from v1')
+          INSERT INTO payments (order_id, amount_pence, method, note)
+          VALUES (${order.id}, ${pricePence}, 'cash', 'migrated from v1')
         `;
       }
 

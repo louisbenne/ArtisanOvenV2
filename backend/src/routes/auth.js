@@ -40,7 +40,7 @@ async function adminLogout(req, res) {
 }
 
 async function parentAuth(req, res) {
-  const { code } = req.body;
+  const code = req.body.code || req.body.accessCode;
   if (!code) throw new HttpError(400, 'Access code required.');
 
   const [row] = await sql`
