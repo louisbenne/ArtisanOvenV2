@@ -8,7 +8,7 @@ const sql = process.env.DATABASE_URL
       max:             parseInt(process.env.DB_POOL_MAX || '10', 10),
       idle_timeout:    30,
       connect_timeout: 10,
-      ssl:             'require',
+      ssl:             { rejectUnauthorized: false },
       onnotice:        () => {},
     })
   : postgres({

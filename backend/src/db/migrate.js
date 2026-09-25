@@ -16,7 +16,10 @@ async function migrate() {
 }
 
 migrate().catch(err => {
-  console.error('Migration failed:', err.message || err);
-  if (err.errors) err.errors.forEach(e => console.error(' -', e.message || e));
+  console.error('Migration failed (full error):', err);
+  console.error('message:', err?.message);
+  console.error('stack:', err?.stack);
+  console.error('DATABASE_URL set:', !!process.env.DATABASE_URL);
+  if (err?.errors) err.errors.forEach((e, i) => console.error(`  [${i}]`, e));
   process.exit(1);
 });
