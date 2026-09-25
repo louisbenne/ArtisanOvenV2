@@ -67,14 +67,6 @@
       <label for="ev-desc">Description</label>
       <textarea id="ev-desc" rows="3"></textarea>
     </div>
-    <div class="form-group">
-      <label for="ev-price">Price per head (pence)</label>
-      <input type="number" id="ev-price" min="0" placeholder="e.g. 800 for £8">
-    </div>
-    <div class="form-group">
-      <label for="ev-max">Max guests</label>
-      <input type="number" id="ev-max" min="1" placeholder="Leave blank for unlimited">
-    </div>
     <div class="form-group" style="display:flex;align-items:center;gap:var(--space-sm)">
       <input type="checkbox" id="ev-open" style="margin:0">
       <label for="ev-open" style="margin:0;font-weight:400;cursor:pointer">Ordering open</label>
@@ -92,30 +84,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { apiGet, apiPost, apiPatch, apiDelete } = window.aoAdmin;
 
   async function loadEvents() {
-    const data = await apiGet('/events');
-    const events = data.events || data || [];
+    const data = await apiGet('/admin/events');
+    const events = data.events || [];
     const el = document.getElementById('events-list');
     if (!events.length) { el.innerHTML = '<p class="text-muted">No events yet.</p>'; return; }
     el.innerHTML = events.map(renderEvent).join('');
   }
 
   function renderEvent(ev) {
-    const date = ev.eventDate ? new Date(ev.eventDate).toLocaleDateString('en-GB', { weekday:'short', year:'numeric', month:'short', day:'numeric' }) : '—';
+    const isOpen = ev.status === 'Open';
+    const date = ev.event_date ? new Date(ev.event_date).toLocaleDateString('en-GB', { weekday:'short', year:'numeric', month:'short', day:'numeric' }) : '—';
     return `
       <div class="order-card">
         <div class="order-card-header">
-          <strong>${escHtml(ev.title)}</strong>
-          <span class="badge ${ev.orderingOpen ? 'badge-success' : 'badge-muted'}">${ev.orderingOpen ? 'Open' : 'Closed'}</span>
+          <strong>${escHtml(ev.name)}</strong>
+          <span class="badge ${isOpen ? 'badge-success' : 'badge-muted'}">${isOpen ? 'Open' : 'Closed'}</span>
         </div>
         <div class="order-card-body text-sm">
           ${date}${ev.location ? ' · ' + escHtml(ev.location) : ''}
-          ${ev.pricePerHead ? ` · £${(ev.pricePerHead/100).toFixed(2)}/head` : ''}
-          ${ev.maxGuests ? ` · max ${ev.maxGuests}` : ''}
         </div>
         <div class="order-card-actions">
-          <button class="btn btn-outline btn-sm edit-ev-btn" data-id="${ev.eventId}">Edit</button>
-          <button class="btn btn-outline btn-sm toggle-ev-btn" data-id="${ev.eventId}" data-open="${ev.orderingOpen}">${ev.orderingOpen ? 'Close' : 'Open'} booking</button>
-          <button class="btn btn-outline btn-sm view-interest-btn" data-id="${ev.eventId}">Interest (${ev.interestCount || 0})</button>
+          <button class="btn btn-outline btn-sm edit-ev-btn" data-id="${ev.id}">Edit</button>
+          <button class="btn btn-outline btn-sm toggle-ev-btn" data-id="${ev.id}" data-open="${isOpen}">${isOpen ? 'Close' : 'Open'} booking</button>
+          <button class="btn btn-outline btn-sm view-interest-btn" data-id="${ev.id}">Interest (${ev.interest_count || 0})</button>
         </div>
       </div>`;
   }
@@ -132,15 +123,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('click', async e => {
     const edit = e.target.closest('.edit-ev-btn');
     if (edit) {
-      const data = await apiGet(`/events/${edit.dataset.id}`);
-      document.getElementById('ev-id').value       = data.eventId;
-      document.getElementById('ev-title').value    = data.title || '';
-      document.getElementById('ev-date').value     = data.eventDate ? data.eventDate.slice(0,10) : '';
-      document.getElementById('ev-location').value = data.location || '';
-      document.getElementById('ev-desc').value     = data.description || '';
-      document.getElementById('ev-price').value    = data.pricePerHead || '';
-      document.getElementById('ev-max').value      = data.maxGuests || '';
-      document.getElementById('ev-open').checked   = !!data.orderingOpen;
+      const data = await apiGet(`/admin/events/${edit.dataset.id}`);
+      const ev = data.event || {};
+      document.getElementById('ev-id').value       = ev.id;
+      document.getElementById('ev-title').value    = ev.name || '';
+      document.getElementById('ev-date').value     = ev.event_date ? ev.event_date.slice(0,10) : '';
+      document.getElementById('ev-location').value = ev.location || '';
+      document.getElementById('ev-desc').value     = ev.customer_instructions || '';
+      document.getElementById('ev-open').checked   = ev.status === 'Open';
       document.getElementById('event-modal-title').textContent = 'Edit Event';
       document.getElementById('event-modal').showModal();
     }
@@ -148,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toggle = e.target.closest('.toggle-ev-btn');
     if (toggle) {
       const open = toggle.dataset.open === 'true';
-      await apiPatch(`/admin/events/${toggle.dataset.id}`, { orderingOpen: !open });
+      await apiPatch(`/admin/events/${toggle.dataset.id}`, { status: open ? 'Closed' : 'Open' });
       loadEvents();
     }
   });
@@ -156,19 +146,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('event-form').addEventListener('submit', async e => {
     e.preventDefault();
     const id = document.getElementById('ev-id').value;
+    const orderingOpen = document.getElementById('ev-open').checked;
     const body = {
-      title:        document.getElementById('ev-title').value.trim(),
-      eventDate:    document.getElementById('ev-date').value,
-      location:     document.getElementById('ev-location').value.trim() || null,
-      description:  document.getElementById('ev-desc').value.trim()     || null,
-      pricePerHead: parseInt(document.getElementById('ev-price').value, 10) || null,
-      maxGuests:    parseInt(document.getElementById('ev-max').value, 10)   || null,
-      orderingOpen: document.getElementById('ev-open').checked,
+      name:                 document.getElementById('ev-title').value.trim(),
+      eventDate:            document.getElementById('ev-date').value,
+      location:             document.getElementById('ev-location').value.trim() || null,
+      customerInstructions: document.getElementById('ev-desc').value.trim()     || null,
+      status:               orderingOpen ? 'Open' : 'Closed',
     };
     const data = id
       ? await apiPatch(`/admin/events/${id}`, body)
       : await apiPost('/admin/events', body);
-    if (data.success || data.eventId) { document.getElementById('event-modal').close(); loadEvents(); }
+    if (data.success) { document.getElementById('event-modal').close(); loadEvents(); }
     else alert(data.message);
   });
 

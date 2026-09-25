@@ -165,7 +165,7 @@ async function doLookup(query, token) {
 
   try {
     const url = new URL(`${API}/orders/lookup`, location.origin);
-    url.searchParams.set('query', query);
+    url.searchParams.set('q', query);
     if (token) url.searchParams.set('token', token);
 
     const res  = await fetch(url, { signal: lookupAbort.signal });
@@ -185,22 +185,22 @@ async function doLookup(query, token) {
 
 function renderOrderResult(container, order) {
   const sizeLabel = { '12inch': 'Whole 12"', 'Half12inch': 'Half 12"', 'Quarter12inch': 'Quarter 12"' };
-  const methodLabel = { 'bank_transfer': 'Bank Transfer', 'paypal': 'PayPal', 'cash': 'Cash' };
 
   const rows = order.items.map(i => `
     <tr>
       <td>${escHtml(i.childName || '—')}</td>
       <td>${escHtml(i.childClass || '—')}</td>
-      <td>${sizeLabel[i.size] || i.size}</td>
-      <td>£${i.price.toFixed(2)}</td>
+      <td>${escHtml(i.topping ? `${i.topping} (${sizeLabel[i.size] || i.size})` : (sizeLabel[i.size] || i.size))}</td>
+      <td>£${(i.pricePence / 100).toFixed(2)}</td>
     </tr>`).join('');
 
-  const paypal_url = `https://paypal.me/ArtisanOven/${order.total.toFixed(2)}GBP`;
+  const totalGBP  = (order.totalPence / 100).toFixed(2);
+  const paypal_url = `https://paypal.me/ArtisanOven/${totalGBP}GBP`;
 
   container.innerHTML = `
     <div class="order-result">
       <div class="flex justify-between items-center">
-        <h3 class="font-brand">Order ${escHtml(order.id)}</h3>
+        <h3 class="font-brand">Order ${escHtml(order.orderId)}</h3>
         <span class="badge ${order.paymentStatus === 'paid' ? 'badge-green' : order.paymentStatus === 'partial' ? 'badge-amber' : 'badge-red'}">
           ${order.paymentStatus}
         </span>
@@ -213,11 +213,11 @@ function renderOrderResult(container, order) {
         </thead>
         <tbody>
           ${rows}
-          ${order.discount ? `<tr><td colspan="3" style="font-size:.9em;color:var(--text-400)">Discount (${escHtml(order.discountCode)})</td><td>−£${order.discount.toFixed(2)}</td></tr>` : ''}
-          <tr class="total-row"><td colspan="3">Total</td><td>£${order.total.toFixed(2)}</td></tr>
-          ${order.amountPaid > 0 && order.paymentStatus !== 'paid'
-            ? `<tr><td colspan="3" style="color:var(--forest-600)">Paid so far</td><td>£${order.amountPaid.toFixed(2)}</td></tr>
-               <tr style="font-weight:600;color:var(--terra-600)"><td colspan="3">Still owed</td><td>£${(order.total - order.amountPaid).toFixed(2)}</td></tr>`
+          ${order.discountPence ? `<tr><td colspan="3" style="font-size:.9em;color:var(--text-400)">Discount (${escHtml(order.discountCode)})</td><td>−£${(order.discountPence / 100).toFixed(2)}</td></tr>` : ''}
+          <tr class="total-row"><td colspan="3">Total</td><td>£${totalGBP}</td></tr>
+          ${order.amountPaidPence > 0 && order.paymentStatus !== 'paid'
+            ? `<tr><td colspan="3" style="color:var(--forest-600)">Paid so far</td><td>£${(order.amountPaidPence / 100).toFixed(2)}</td></tr>
+               <tr style="font-weight:600;color:var(--terra-600)"><td colspan="3">Still owed</td><td>£${((order.totalPence - order.amountPaidPence) / 100).toFixed(2)}</td></tr>`
             : ''}
         </tbody>
       </table>
@@ -231,20 +231,20 @@ function renderOrderResult(container, order) {
             <div>Account: <strong>Artisan Oven</strong> <button class="copy-btn" data-copy="Artisan Oven">copy</button></div>
             <div>Sort code: <strong>00-00-00</strong> <button class="copy-btn" data-copy="00-00-00">copy</button></div>
             <div>Acc. no: <strong>00000000</strong> <button class="copy-btn" data-copy="00000000">copy</button></div>
-            <div>Reference: <strong>${escHtml(order.id)}</strong> <button class="copy-btn" data-copy="${escHtml(order.id)}">copy</button></div>
+            <div>Reference: <strong>${escHtml(order.orderId)}</strong> <button class="copy-btn" data-copy="${escHtml(order.orderId)}">copy</button></div>
           </div>
         </div>
 
         <div class="payment-method-section">
           <h4>🅿 PayPal</h4>
           <a href="${paypal_url}" class="btn btn-outline mt-sm" target="_blank" rel="noopener">
-            Pay £${order.total.toFixed(2)} via PayPal →
+            Pay £${totalGBP} via PayPal →
           </a>
         </div>
 
         <div class="payment-method-section">
           <h4>💵 Cash</h4>
-          <p class="text-sm text-muted">Send cash with your child at lunchtime — please use an envelope labelled with Order ${escHtml(order.id)}.</p>
+          <p class="text-sm text-muted">Send cash with your child at lunchtime — please use an envelope labelled with Order ${escHtml(order.orderId)}.</p>
         </div>
       </div>
     </div>`;

@@ -1,16 +1,77 @@
 'use strict';
 
 const crypto = require('crypto');
+const https  = require('https');
 const sql    = require('../db');
+
+// ── PayPal signature verification ────────────────────────────────────────────
+
+function paypalApiRequest(path, method, body, headers) {
+  const host = process.env.PAYPAL_MODE === 'sandbox'
+    ? 'api-m.sandbox.paypal.com'
+    : 'api-m.paypal.com';
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: host, path, method,
+      headers: { ...headers, 'Content-Length': Buffer.byteLength(body) },
+    }, res => {
+      let raw = '';
+      res.on('data', d => { raw += d; });
+      res.on('end', () => {
+        if (res.statusCode >= 400) reject(new Error(`PayPal ${path} ${res.statusCode}: ${raw}`));
+        else resolve(JSON.parse(raw));
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+async function getPayPalAccessToken() {
+  const auth = Buffer.from(
+    `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
+  ).toString('base64');
+  const data = await paypalApiRequest(
+    '/v1/oauth2/token', 'POST',
+    'grant_type=client_credentials',
+    { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' }
+  );
+  return data.access_token;
+}
+
+async function verifyPayPalSignature(req) {
+  if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) return true;
+  const token = await getPayPalAccessToken();
+  const result = await paypalApiRequest(
+    '/v1/notifications/verify-webhook-signature', 'POST',
+    JSON.stringify({
+      auth_algo:         req.headers['paypal-auth-algo'],
+      cert_url:          req.headers['paypal-cert-url'],
+      transmission_id:   req.headers['paypal-transmission-id'],
+      transmission_sig:  req.headers['paypal-transmission-sig'],
+      transmission_time: req.headers['paypal-transmission-time'],
+      webhook_id:        process.env.PAYPAL_WEBHOOK_ID,
+      webhook_event:     req.body,
+    }),
+    { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+  );
+  return result.verification_status === 'SUCCESS';
+}
 
 // ── PayPal webhook ─────────────────────────────────────────────────────────────
 // PayPal sends a PAYMENT.CAPTURE.COMPLETED event with custom_id set to the
 // public_order_code when the buyer completes payment via the PayPal button.
 async function paypal(req, res) {
-  // Verify PayPal signature (headers: PAYPAL-TRANSMISSION-SIG etc.)
-  // TODO: Phase 4 — implement full PayPal webhook signature verification.
-  // For now, accept the body but require the PAYPAL_WEBHOOK_ID env var to be set.
   if (!process.env.PAYPAL_WEBHOOK_ID) {
+    return res.status(200).json({ received: true });
+  }
+
+  try {
+    const valid = await verifyPayPalSignature(req);
+    if (!valid) return res.status(403).json({ error: 'Invalid PayPal signature' });
+  } catch (err) {
+    console.error('[paypal-webhook] signature verification failed:', err.message);
     return res.status(200).json({ received: true });
   }
 

@@ -58,10 +58,11 @@ router.patch('/admin/kitchen/items/:id',     requireAuth('kitchen'),   kitchen.t
 
 // ── Admin: Events ─────────────────────────────────────────────────────────────
 router.get(   '/admin/events',               requireAuth('volunteer'), events.adminList);
+router.get(   '/admin/events/interest',      requireAuth('volunteer'), events.adminInterest);
+router.get(   '/admin/events/:id',           requireAuth('volunteer'), events.adminGet);
 router.post(  '/admin/events',               requireAuth('owner'),     events.adminCreate);
 router.patch( '/admin/events/:id',           requireAuth('owner'),     events.adminUpdate);
 router.delete('/admin/events/:id',           requireAuth('owner'),     events.adminDelete);
-router.get(   '/admin/events/interest',      requireAuth('volunteer'), events.adminInterest);
 router.get(   '/admin/orders/event/:id',     requireAuth('volunteer'), orders.adminByEvent);
 
 // ── Admin: Comms ──────────────────────────────────────────────────────────────

@@ -38,8 +38,20 @@ async function registerInterest(req, res) {
 }
 
 async function adminList(_req, res) {
-  const rows = await sql`SELECT * FROM events ORDER BY created_at DESC`;
+  const rows = await sql`
+    SELECT e.*, COUNT(i.id)::INTEGER AS interest_count
+    FROM   events e
+    LEFT   JOIN event_interest i ON i.event_id = e.id
+    GROUP  BY e.id
+    ORDER  BY e.created_at DESC
+  `;
   res.json({ success: true, events: rows });
+}
+
+async function adminGet(req, res) {
+  const [event] = await sql`SELECT * FROM events WHERE id = ${req.params.id}`;
+  if (!event) throw new HttpError(404, 'Event not found.');
+  res.json({ success: true, event });
 }
 
 async function adminCreate(req, res) {
@@ -104,4 +116,4 @@ async function adminInterest(_req, res) {
   res.json({ success: true, interest: rows });
 }
 
-module.exports = { list, get, registerInterest, adminList, adminCreate, adminUpdate, adminDelete, adminInterest };
+module.exports = { list, get, registerInterest, adminList, adminGet, adminCreate, adminUpdate, adminDelete, adminInterest };
