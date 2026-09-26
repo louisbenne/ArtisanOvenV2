@@ -3,6 +3,7 @@
 const sql = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
 const schedule = require('../domain/schedule');
+const statusService = require('../services/statusService');
 
 // Superseded by GET /api/status (v1-shaped) — kept for the interim v2 UI.
 async function getCurrent(_req, res) {
@@ -65,6 +66,7 @@ async function adminCreate(req, res) {
     `;
     return s;
   });
+  statusService.invalidate();
 
   res.status(201).json({ success: true, session });
 }
@@ -83,6 +85,7 @@ async function adminUpdate(req, res) {
     UPDATE ordering_sessions SET ${sql(fields)} WHERE id = ${id} RETURNING *
   `;
   if (!session) throw new HttpError(404, 'Session not found.');
+  statusService.invalidate();
 
   res.json({ success: true, session });
 }

@@ -10,6 +10,7 @@ const { requireParent } = require('../middleware/requireParent');
 
 const auth      = require('./auth');
 const sessions  = require('./sessions');
+const status    = require('./status');
 const orders    = require('./orders');
 const events    = require('./events');
 const kitchen   = require('./kitchen');
@@ -21,6 +22,7 @@ const webhooks  = require('./webhooks');
 const router = Router();
 
 // ── Public ────────────────────────────────────────────────────────────────────
+router.get( '/status',                 status.get);
 router.get( '/sessions/current',       sessions.getCurrent);
 router.get( '/orders/lookup',          orders.lookup);
 router.get( '/events',                 events.list);

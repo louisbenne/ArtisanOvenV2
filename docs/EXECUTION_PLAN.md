@@ -73,7 +73,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | # | Branch | Scope | Status |
 |---|---|---|---|
 | D1 | `phase-4-settings-schedule` | Settings columns + `domain/schedule.js` (Europe/London, BST/GMT tests) | ✅ |
-| D2 | `phase-4-status` | `GET /api/status` with v1 fields + cache | ⬜ |
+| D2 | `phase-4-status` | `GET /api/status` with v1 fields + cache | ✅ |
 | D3 | `phase-4-events` | slugs, description, deadline, qty, Closed/deadline checks | ⬜ |
 | D4 | `phase-4-small-endpoints` | discount check, version, change password | ⬜ |
 

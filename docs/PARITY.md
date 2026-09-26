@@ -7,7 +7,7 @@ changes a row.** Legend: ✅ works · ⚠️ partial/buggy · ❌ missing/broken
 
 | v1 action / feature | v2 endpoint (target) | Now | Fix in |
 |---|---|---|---|
-| `getStatus` (tracker, pills, messages) | `GET /api/status` → v1-shaped object | ⚠️ `/sessions/current` lacks `serviceNoticeDate`, `nextOpeningTime`, `capacityMessage`, `deadlineMessage`, `closedMessage`, `closingSchedule`, `currentOrders`, `isPastDeadline` | P4 |
+| `getStatus` (tracker, pills, messages) | `GET /api/status` → v1-shaped object | ✅ (+ soldOut, ordersTeamEmail) | P4 |
 | Google Form lunch order | `POST /api/orders` `{type:'lunch'}` | ⚠️ backend works (bug 2 fixed); native form in P3 | P0, P3 |
 | `getOrder` (email / order # / token) | `GET /api/orders/lookup?q=&token=` | ⚠️ token ignored by page, response shape differs, legacy `?order=N&token=` links | P2 |
 | `getEvents` / `getEvent` | `GET /api/events`, `GET /api/events/:slug` | ⚠️ no `description`, `ordering_deadline`, string slug IDs | P4 |

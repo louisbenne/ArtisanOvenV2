@@ -4,6 +4,7 @@ const sql = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
 const { logAudit }  = require('../services/auditService');
 const schedule      = require('../domain/schedule');
+const statusService = require('../services/statusService');
 
 async function get(_req, res) {
   const [s] = await sql`SELECT * FROM site_settings WHERE id = 1`;
@@ -33,6 +34,7 @@ async function update(req, res) {
   if (req.body.auto_close_enabled !== undefined) updates.auto_close_enabled = Boolean(req.body.auto_close_enabled);
 
   const [s] = await sql`UPDATE site_settings SET ${sql(updates)} WHERE id = 1 RETURNING *`;
+  statusService.invalidate();
   await logAudit({ adminUserId: req.admin.id, action: 'update_site_settings', details: updates });
   res.json({ success: true, settings: s });
 }

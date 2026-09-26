@@ -8,6 +8,7 @@ const { notifyOrder }   = require('../services/notificationService');
 const orderNumbers      = require('../domain/orderNumbers');
 const { isUuid }        = require('../util/tokens');
 const schedule          = require('../domain/schedule');
+const statusService     = require('../services/statusService');
 
 const PRICE_PENCE  = { '12inch': 800, 'Half12inch': 500, 'Quarter12inch': 300 };
 const CAPACITY     = { '12inch': 1.0, 'Half12inch': 0.5, 'Quarter12inch': 0.25 };
@@ -173,6 +174,7 @@ async function create(req, res) {
   if (result.duplicate) return sendDuplicate(result.duplicate);
 
   // Notify asynchronously (don't block the response on email/WhatsApp delivery).
+  statusService.invalidate();
   notifyOrder('order_confirmation', result.order.id).catch(console.error);
 
   // Broadcast to connected kitchen / admin boards.
@@ -359,6 +361,7 @@ async function adminDelete(req, res) {
     RETURNING id
   `;
   if (!order) throw new HttpError(404, 'Order not found.');
+  statusService.invalidate();
 
   await logAudit({ adminUserId: req.admin.id, action: 'delete_order',
                    targetTable: 'orders', targetId: String(id) });
