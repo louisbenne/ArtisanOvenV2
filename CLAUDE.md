@@ -15,8 +15,8 @@ backend (Node + Express + PostgreSQL) instead of Google Forms / Sheets / Apps Sc
    task explicitly names the file and the change. Allowed edits: replacing a
    `fetch(...)` call site with a call into `public/js/api.js`, adding the
    `api.watchSoldOut()` script line to `index.html` / `fully-booked.html`, and the
-   three sanctioned UI changes listed in the master plan (native lunch order form,
-   admin login username field, new admin cards for v2-only features).
+   two sanctioned UI changes (native lunch order form and new admin cards for
+   v2-only features). The admin login stays v1's password-only screen (Louis, D8).
 2. **All network calls from the browser go through `public/js/api.js`.** No page
    may call `fetch` against the backend directly. `api.js` returns objects in the
    exact shape the v1 page code already expects, so page logic stays untouched.

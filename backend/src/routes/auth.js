@@ -8,20 +8,26 @@ const { bearerToken } = require('../util/tokens');
 
 const SESSION_TTL_HOURS = 12;
 
+// Louis's decision (D8): the admin page asks for a password only, like v1.
+// Without a username we check the password against every active account and
+// log in as the highest-ranked match. A username is still accepted if sent.
+const ROLE_RANK = { owner: 4, treasurer: 3, kitchen: 2, volunteer: 1 };
+
 async function adminLogin(req, res) {
   const { username, password } = req.body;
-  if (!username || !password) throw new HttpError(400, 'Username and password required.');
+  if (!password) throw new HttpError(400, 'Password required.');
 
-  const [user] = await sql`
-    SELECT id, username, password_hash, role, active
-    FROM   admin_users
-    WHERE  username = ${username.trim().toLowerCase()}
-  `;
+  const candidates = username
+    ? await sql`SELECT id, username, password_hash, role FROM admin_users
+                WHERE username = ${String(username).trim().toLowerCase()} AND active`
+    : await sql`SELECT id, username, password_hash, role FROM admin_users WHERE active`;
+  candidates.sort((a, b) => (ROLE_RANK[b.role] ?? 0) - (ROLE_RANK[a.role] ?? 0));
 
-  if (!user || !user.active) throw new HttpError(401, 'Invalid credentials.');
-
-  const match = await bcrypt.compare(password, user.password_hash);
-  if (!match) throw new HttpError(401, 'Invalid credentials.');
+  let user = null;
+  for (const c of candidates) {
+    if (await bcrypt.compare(password, c.password_hash)) { user = c; break; }
+  }
+  if (!user) throw new HttpError(401, 'Access denied. Incorrect password.');
 
   const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 3600 * 1000);
   const [session] = await sql`
