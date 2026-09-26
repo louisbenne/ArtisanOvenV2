@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Special Events & Catering — Artisan Oven</title>
+  <meta name="description" content="Browse and order artisan wood-fired pizzas for special school events and catering." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="AO Events" />
+  <meta name="theme-color" content="#1f3a2e" />
+  <link rel="apple-touch-icon" href="admin-assets/admin-apple-touch-icon.png" />
+
+  <!-- Resource Hints -->
+  <link rel="preconnect" href="https://script.google.com" crossorigin />
+  <link rel="dns-prefetch" href="https://script.google.com" />
+  <link rel="preload" href="fonts/BaarSophia.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="style.css" />
+  <script src="/config.js"></script>
+  <style>
+    .events-hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
+    .events-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto 60px;
+      padding: 0 20px;
+    }
+    .event-card {
+      background: var(--paper-raised);
+      border: 1px solid rgba(31, 58, 46, 0.12);
+      border-radius: 16px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 16px rgba(31, 58, 46, 0.04);
+    }
+    .event-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(31, 58, 46, 0.08);
+      border-color: var(--sage);
+    }
+    .event-card-title {
+      font-family: "Baar Sophia", serif;
+      font-size: 1.5rem;
+      color: var(--forest);
+      margin-bottom: 12px;
+    }
+    .event-meta-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px 0;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .event-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .event-meta-item svg {
+      width: 16px;
+      height: 16px;
+      color: var(--basil);
+      flex-shrink: 0;
+    }
+    .event-desc {
+      font-size: 0.95rem;
+      color: var(--text-main);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .event-card-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--forest);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.2s;
+      text-align: center;
+    }
+    .event-card-btn:hover {
+      background: var(--basil);
+    }
+    .events-loading, .events-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+    }
+  </style>
+  <script src="/config.js"></script>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <a href="index.html" class="wordmark" style="text-decoration: none; color: inherit;">
+        <span class="flame-dot" aria-hidden="true"></span>
+        ARTISAN OVEN
+      </a>
+      <a href="index.html" style="font-size: 0.9rem; font-weight: 600; color: var(--forest); text-decoration: none;">&larr; Back to Home</a>
+    </div>
+  </header>
+
+  <main>
+    <div id="events-main-content">
+      <section class="events-hero">
+        <div class="container">
+          <h1 class="hero-heading" style="font-size: 2.5rem; margin-bottom: 12px;">Special Events & Catering</h1>
+          <p class="hero-sub" style="max-width: 600px; margin: 0 auto;">Choose from our upcoming special school events and place your artisan pizza order below.</p>
+        </div>
+      </section>
+
+      <div id="events-container">
+        <div class="events-loading" id="events-loading">Loading available events...</div>
+        <div class="events-grid" id="events-grid" style="display: none;"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer" style="margin-top: 60px;">
+    <div class="container">
+      <p class="footer-brand">ARTISAN OVEN</p>
+      <div class="footer-bottom">
+        <span>© 2026</span> Artisan Oven &middot; <a href="terms.html" class="admin-footer-link">T&amp;Cs</a> &middot; <a href="admin.html" class="admin-footer-link">Admin</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      loadEvents();
+    });
+
+    async function loadEvents() {
+      const grid = document.getElementById("events-grid");
+      const loading = document.getElementById("events-loading");
+      if (!grid || !loading) return;
+
+      const apiUrl = (typeof ORDER_API_URL !== 'undefined') ? ORDER_API_URL : (window.ORDER_API_URL || "");
+
+      if (!apiUrl || apiUrl === "PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
+        loading.innerHTML = '<p style="color: var(--terracotta);">API URL not configured in script.js.</p>';
+        return;
+      }
+
+      const STORAGE_KEY_REG_INTEREST_MAP = "AO_EVENT_REG_INTEREST_MAP";
+
+      function getStoredRegInterestMap() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_REG_INTEREST_MAP);
+          if (raw) return JSON.parse(raw);
+        } catch(e) {}
+        return {};
+      }
+
+      function stripRegInterestTag(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/<!--AO_REG_INTEREST:[01]-->/g, '')
+          .replace(/\[MODE:REGISTER_INTEREST\]/g, '')
+          .trim();
+      }
+
+      function isRegInterest(val) {
+        return val === true || val === 'true' || val === 'TRUE' || val === '1' || val === 1 || val === 'True';
+      }
+
+      function extractRegInterestFromEvent(ev) {
+        if (!ev) return false;
+        const inst = String(ev.customerInstructions || "");
+        if (inst.indexOf('<!--AO_REG_INTEREST:1-->') >= 0 || inst.indexOf('[MODE:REGISTER_INTEREST]') >= 0) {
+          return true;
+        }
+        if (inst.indexOf('<!--AO_REG_INTEREST:0-->') >= 0) {
+          return false;
+        }
+        if (ev.registerInterest !== undefined && ev.registerInterest !== null && ev.registerInterest !== "") {
+          return isRegInterest(ev.registerInterest);
+        }
+        const map = getStoredRegInterestMap();
+        if (ev.id && map[ev.id] !== undefined) {
+          return !!map[ev.id];
+        }
+        return false;
+      }
+
+      function getLocalEvents() {
+        try {
+          const raw = localStorage.getItem("AO_LOCAL_EVENTS");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              const filtered = parsed.filter(e => e && 
+                e.id !== 'summer-popup-2026' && 
+                e.id !== 'autumn-feast-2026' && 
+                e.name !== 'Autumn Harvest Feast' && 
+                e.name !== 'Summer Pizza Pop-Up'
+              );
+              if (filtered.length !== parsed.length) {
+                localStorage.setItem("AO_LOCAL_EVENTS", JSON.stringify(filtered));
+              }
+              if (filtered.length > 0) {
+                return filtered.map(e => ({
+                  ...e,
+                  registerInterest: extractRegInterestFromEvent(e),
+                  customerInstructions: stripRegInterestTag(e.customerInstructions)
+                }));
+              }
+            }
+          }
+        } catch(e) {}
+        return [];
+      }
+
+      function renderEventsArray(eventsList) {
+        if (!eventsList || eventsList.length === 0) {
+          loading.innerHTML = `
+            <div style="background: var(--paper-raised); padding: 40px; border-radius: 12px; border: 1px solid rgba(31,58,46,0.1); max-width: 500px; margin: 0 auto;">
+              <h3 style="color: var(--forest); margin-bottom: 8px; font-family: 'Baar Sophia', serif; font-size: 1.3rem;">No Active Events Right Now</h3>
+              <p style="color: var(--text-secondary); font-size: 0.95rem;">There are currently no special events open for ordering. Check back soon or visit our weekly Tuesday school lunch orders!</p>
+              <a href="order.html" class="event-card-btn" style="margin-top: 20px; display: inline-flex;">Go to Tuesday School Lunch Order &rarr;</a>
+            </div>
+          `;
+          return;
+        }
+
+        loading.style.display = "none";
+        grid.style.display = "grid";
+        grid.innerHTML = "";
+
+        eventsList.forEach(ev => {
+          if (ev.active === false || ev.active === 'false') return;
+          const regInterest = extractRegInterestFromEvent(ev);
+          const card = document.createElement("div");
+          card.className = "event-card";
+          card.innerHTML = `
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px;">
+                <h2 class="event-card-title" style="margin-bottom: 0;">${escapeHtml(ev.name)}</h2>
+                ${regInterest ? `<span style="font-size: 0.72rem; font-weight: 700; background: rgba(31,58,46,0.1); color: var(--forest); padding: 4px 10px; border-radius: 999px; white-space: nowrap; border: 1px solid rgba(31,58,46,0.2);">Mode: Register Interest First</span>` : ''}
+              </div>
+              <ul class="event-meta-list">
+                <li class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  <span>${escapeHtml(ev.date || 'TBD')} ${ev.time ? '• ' + escapeHtml(ev.time) : ''}</span>
+                </li>
+                ${ev.location ? `
+                <li class="event-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  <span>${escapeHtml(ev.location)}</span>
+                </li>` : ''}
+              </ul>
+              <p class="event-desc">${escapeHtml(ev.description || 'Join us for freshly baked wood-fired artisan pizza.')}</p>
+            </div>
+            <a href="event-order.html?event=${encodeURIComponent(ev.id)}" class="event-card-btn">${regInterest ? 'REGISTER YOUR INTEREST &rarr;' : 'ORDER FOR THIS EVENT &rarr;'}</a>
+          `;
+          grid.appendChild(card);
+        });
+      }
+
+      // Immediate display from local cache so the page is never stuck on 'Loading'
+      const initialEvents = getLocalEvents();
+      if (initialEvents && initialEvents.length > 0) {
+        renderEventsArray(initialEvents);
+      }
+
+      try {
+        const url = new URL(apiUrl);
+        url.searchParams.set("action", "getEvents");
+        url.searchParams.set("_t", Date.now().toString());
+
+        let controller = null;
+        let timeoutId = null;
+        if (typeof AbortController !== 'undefined') {
+          controller = new AbortController();
+          timeoutId = setTimeout(() => {
+            try { controller.abort(); } catch (e) {}
+          }, 15000);
+        }
+
+        const res = await fetch(url.toString(), {
+          method: "GET",
+          mode: "cors",
+          redirect: "follow",
+          signal: controller ? controller.signal : undefined
+        });
+        if (timeoutId) clearTimeout(timeoutId);
+
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.success && Array.isArray(data.events)) {
+            const processedEvents = data.events
+              .filter(e => e && 
+                e.id !== 'summer-popup-2026' && 
+                e.id !== 'autumn-feast-2026' && 
+                e.name !== 'Autumn Harvest Feast' && 
+                e.name !== 'Summer Pizza Pop-Up'
+              )
+              .map(e => ({
+                ...e,
+                registerInterest: extractRegInterestFromEvent(e),
+                customerInstructions: stripRegInterestTag(e.customerInstructions)
+              }));
+            localStorage.setItem("AO_LOCAL_EVENTS", JSON.stringify(processedEvents));
+            renderEventsArray(processedEvents);
+          } else {
+            renderEventsArray([]);
+          }
+        } else {
+          if (!initialEvents || initialEvents.length === 0) {
+            renderEventsArray([]);
+          }
+        }
+      } catch (err) {
+        if (!initialEvents || initialEvents.length === 0) {
+          renderEventsArray([]);
+        }
+      }
+
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    }
+  </script>
+</body>
+</html>
