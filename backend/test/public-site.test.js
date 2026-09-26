@@ -76,3 +76,9 @@ test('unknown extensionless routes get the home page; missing files 404; API sta
 test('the old v2 UI paths are gone (no /frontend/ tree served)', async () => {
   assert.equal((await get('/frontend/style.css')).status, 404);
 });
+
+test('pages may only call our own origin (v1 admin.html falls back to v1\'s live Apps Script)', async () => {
+  for (const url of ['/', '/admin.html', '/order.html']) {
+    assert.equal((await get(url)).headers.get('content-security-policy'), "connect-src 'self'", url);
+  }
+});

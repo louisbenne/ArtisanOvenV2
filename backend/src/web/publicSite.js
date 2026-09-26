@@ -35,6 +35,11 @@ function mountPublicSite(app, publicDir) {
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // The browser may only fetch/XHR/WebSocket our own origin. v1's admin.html
+    // falls back to v1's live Apps Script URL; this makes it impossible for v2
+    // (or its staging) to read or write v1's production data by accident.
+    // (Full CSP comes with Phase 8 hardening.)
+    res.setHeader('Content-Security-Policy', "connect-src 'self'");
     const basename = path.posix.basename(path.posix.normalize(req.path));
     const hiddenSegment = req.path.split('/').some(s => s.startsWith('.'));
     if (hiddenSegment || req.path.startsWith('/apps-script') || FORBIDDEN.some(re => re.test(basename))) {
