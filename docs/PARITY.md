@@ -13,8 +13,8 @@ changes a row.** Legend: ✅ works · ⚠️ partial/buggy · ❌ missing/broken
 | `getEvents` / `getEvent` | `GET /api/events`, `GET /api/events/:slug` | ⚠️ no `description`, `ordering_deadline`, string slug IDs | P4 |
 | `registerInterest` | `POST /api/events/:slug/interest` | ✅ (param names differ: handled in `api.js`) | P2 |
 | `createEventOrder` | `POST /api/orders` `{type:'event'}` | ⚠️ no `qty`, no Closed-status/deadline check, no dedicated confirmation | P4 |
-| `parentAuth` | `POST /api/parent/auth` → parent session | ❌ security hole (bug 3) | P0 |
-| `createParentOrder` | `POST /api/parent/orders` (parent session required) | ❌ 400 + no auth (bugs 4, 5) | P0, P4 |
+| `parentAuth` | `POST /api/parent/auth` → parent session | ✅ (bug 3 fixed) | P0 |
+| `createParentOrder` | `POST /api/parent/orders` (parent session required) | ⚠️ secured + works (bugs 4, 5); multi-child in P4 | P0, P4 |
 | `getVersion` | `GET /api/version` | ❌ | P4 |
 | Discount code on lunch form | `POST /api/discounts/check` | ❌ (page calls missing route) | P4 |
 | **Sold-out mode:** home page automatically becomes the fully-booked page (§4A) | `/` serves `fully-booked.html` while sold out; `/order.html` redirects to `/` | ❌ (v1 did this by hand on 23 Sept) | P1, P2, P4 |

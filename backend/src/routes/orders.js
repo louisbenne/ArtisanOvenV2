@@ -12,27 +12,31 @@ const CAPACITY     = { '12inch': 1.0, 'Half12inch': 0.5, 'Quarter12inch': 0.25 }
 const SIZE_ALIAS   = { Half: 'Half12inch', Quarter: 'Quarter12inch' };
 const normalizeSize = s => SIZE_ALIAS[s] || s;
 
-// ── Public: create a lunch or event order ─────────────────────────────────────
+// ── Create a lunch / event order (public) or a parent order (parent session) ──
+// Parent orders arrive via requireParent (req.parent set); their type and
+// discount come from the parent session, never from the request body.
 async function create(req, res) {
   const {
-    orderType = 'lunch',
     eventId,
     payerPhone,
     whatsappOptIn = false,
     items = [],
     allergyFlag = false,
     allergyNotes,
-    discountCode,
     paymentMethod,
     notes,
     submissionId,
     termsAcceptedAt,
   } = req.body;
 
+  const isParent     = Boolean(req.parent);
+  const orderType    = isParent ? 'parent' : (req.body.orderType ?? 'lunch');
+  const discountCode = isParent ? req.parent.discountCode : req.body.discountCode;
+
   const payerName  = req.body.payerName  || req.body.customerName;
   const payerEmail = req.body.payerEmail || req.body.email;
 
-  if (!['lunch','event'].includes(orderType)) throw new HttpError(400, 'Invalid order type.');
+  if (!isParent && !['lunch','event'].includes(orderType)) throw new HttpError(400, 'Invalid order type.');
   if (!payerName)   throw new HttpError(400, 'Name required.');
   if (!payerEmail)  throw new HttpError(400, 'Email required.');
   if (!items.length) throw new HttpError(400, 'At least one pizza item required.');
@@ -58,7 +62,9 @@ async function create(req, res) {
   }
 
   const subtotal = items.reduce((s, i) => s + PRICE_PENCE[normalizeSize(i.size)], 0);
-  const discount = discountCode ? await applyDiscount(discountCode, subtotal) : { discountPence: 0, finalPence: subtotal };
+  const discount = discountCode
+    ? await applyDiscount(discountCode, subtotal, { scope: isParent ? 'parent_gate' : 'public' })
+    : { discountPence: 0, finalPence: subtotal };
   const total    = discount.finalPence;
 
   // Capacity check + order insert in one transaction.
@@ -87,7 +93,7 @@ async function create(req, res) {
                ), 0)::NUMERIC(6,2) AS current_pizzas
         FROM   orders o
         JOIN   order_items i ON i.order_id = o.id
-        WHERE  o.session_id = ${session.id} AND NOT o.is_deleted
+        WHERE  o.session_id = ${session.id} AND o.order_type = 'lunch' AND NOT o.is_deleted
       `;
       session.current_pizzas = current_pizzas;
       if (!session.ordering_open) throw new HttpError(409, 'Ordering is currently closed.');
@@ -171,11 +177,11 @@ async function create(req, res) {
   });
 }
 
-// ── Public: create an internal parent order ───────────────────────────────────
+// ── Parent session: create an internal parent order ───────────────────────────
+// requireParent (router) verifies the parent session and sets req.parent; create()
+// then forces order_type='parent' and the session's linked discount (e.g. MUTTI).
 async function createParent(req, res) {
-  // Same as create() but order_type='parent' and discount is auto-applied via access code.
-  // The token from /auth/parent is verified by requireAuth in the router.
-  req.body.orderType = 'parent';
+  if (!req.parent) throw new HttpError(401, 'Access denied.');
   return create(req, res);
 }
 

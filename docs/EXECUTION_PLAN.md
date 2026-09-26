@@ -55,7 +55,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | B4 | `phase-0-migrations` | `migrations/NNN_*.sql` + `schema_migrations`, baseline existing DBs (task 2) | ✅ |
 | B5 | `phase-0-lunch-transaction` | Bug 2 + concurrency test (task 3) | ✅ |
 | B6 | `phase-0-order-numbers` | §4B: lunch `#N` per session, shared `E` counter (task 10) | ✅ |
-| B7 | `phase-0-parent-security` | Bugs 3, 4, 5: `parent_sessions`, `requireParent`, discount `scope` (task 4) | ⬜ |
+| B7 | `phase-0-parent-security` | Bugs 3, 4, 5: `parent_sessions`, `requireParent`, discount `scope` (task 4) | ✅ |
 | B8 | `phase-0-aggregates` | Bugs 7, 8, 11 (task 5) | ⬜ |
 | B9 | `phase-0-idempotency` | Bug 12: `orders.submission_id` (task 6) | ⬜ |
 | B10 | `phase-0-header-auth` | Bug 13: token only in `Authorization` (task 7) | ⬜ |

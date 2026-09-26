@@ -54,21 +54,17 @@ async function parentAuth(req, res) {
 
   if (!row) throw new HttpError(401, 'Invalid access code.');
 
-  // Short-lived token stored in the DB for 12 hours (same TTL used for admin sessions).
-  const expiresAt = new Date(Date.now() + 12 * 3600 * 1000);
+  // A PARENT session (parent_sessions), 12 hours like v1 — never an admin session.
+  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 3600 * 1000);
   const [session] = await sql`
-    INSERT INTO admin_sessions (admin_user_id, expires_at)
-    SELECT id, ${expiresAt} FROM admin_users WHERE username = 'parent_gate' AND active
+    INSERT INTO parent_sessions (access_code, expires_at)
+    VALUES (${row.code}, ${expiresAt})
     RETURNING token
   `;
 
-  // If no parent_gate pseudo-user exists yet, issue a token differently.
-  // In practice the seed should create one; this is a safety fallback.
-  const token = session?.token || require('crypto').randomUUID();
-
   res.json({
     success:      true,
-    token,
+    token:        session.token,
     discountCode: row.linked_discount_code,
     discountPct:  row.percent_off,
     discountFlat: row.flat_off_pence,

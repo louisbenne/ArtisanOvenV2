@@ -3,14 +3,20 @@
 const sql = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
 
-async function applyDiscount(code, subtotalPence) {
+// scope: 'public'      → only codes a customer may type (e.g. STMSCS)
+//        'parent_gate' → also gated codes (e.g. MUTTI); used ONLY for parent orders,
+//                        with the code taken from the parent session, never the request.
+async function applyDiscount(code, subtotalPence, { scope = 'public' } = {}) {
   const [row] = await sql`
-    SELECT code, percent_off, flat_off_pence, active, max_uses, times_used, expires_at
+    SELECT code, percent_off, flat_off_pence, active, max_uses, times_used, expires_at, scope
     FROM   discount_codes
     WHERE  upper(code) = ${code.trim().toUpperCase()}
   `;
 
-  if (!row)         throw new HttpError(400, 'Discount code not found.');
+  // A gated code typed on a public order looks exactly like an unknown one.
+  if (!row || (row.scope === 'parent_gate' && scope !== 'parent_gate')) {
+    throw new HttpError(400, 'Discount code not found.');
+  }
   if (!row.active)  throw new HttpError(400, 'Discount code is no longer active.');
   if (row.expires_at && new Date() > new Date(row.expires_at)) {
     throw new HttpError(400, 'Discount code has expired.');
