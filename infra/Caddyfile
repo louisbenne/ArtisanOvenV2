@@ -1,9 +1,6 @@
-# SITE_ADDRESS comes from docker-compose (default: localhost).
-#   Production: SITE_ADDRESS=artisanoven.shop  → real Let's Encrypt cert
-#   Local:      SITE_ADDRESS=localhost         → Caddy's local CA (self-signed)
-{$SITE_ADDRESS:localhost} {
-    # The backend serves the API, Socket.IO, and the static frontend/admin
-    # files (same as on Railway), so Caddy just terminates TLS and proxies.
+# The backend serves the API, Socket.IO, and the static frontend/admin
+# files (same as on Railway), so Caddy just terminates TLS and proxies.
+(app) {
     reverse_proxy backend:3000
 
     encode gzip zstd
@@ -14,4 +11,17 @@
         Referrer-Policy        strict-origin-when-cross-origin
         -Server
     }
+}
+
+# SITE_ADDRESS comes from docker-compose (default: localhost).
+#   Production: SITE_ADDRESS=artisanoven.shop  → real Let's Encrypt cert
+#   Local:      SITE_ADDRESS=localhost         → Caddy's local CA (self-signed)
+{$SITE_ADDRESS:localhost} {
+    import app
+}
+
+# Plain-HTTP entry for a tunnel that terminates TLS itself (Tailscale Funnel).
+# Published on 127.0.0.1 only — see docker-compose.yml.
+http://:8080 {
+    import app
 }
