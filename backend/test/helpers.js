@@ -88,9 +88,12 @@ function lunchOrder(overrides = {}) {
   };
 }
 
-async function createEvent(sql, { name = 'Summer Fair', status = 'Open' } = {}) {
+let eventSeq = 0;
+async function createEvent(sql, { name = 'Summer Fair', status = 'Open', slug, registerInterest = false } = {}) {
+  slug = slug || `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${++eventSeq}`;
   const [e] = await sql`
-    INSERT INTO events (name, event_date, status) VALUES (${name}, CURRENT_DATE + 30, ${status})
+    INSERT INTO events (name, slug, event_date, status, register_interest_mode)
+    VALUES (${name}, ${slug}, 'Saturday 10th October 2026', ${status}, ${registerInterest})
     RETURNING *`;
   return e;
 }

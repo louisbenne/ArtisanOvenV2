@@ -10,9 +10,9 @@ changes a row.** Legend: ✅ works · ⚠️ partial/buggy · ❌ missing/broken
 | `getStatus` (tracker, pills, messages) | `GET /api/status` → v1-shaped object | ✅ (+ soldOut, ordersTeamEmail) | P4 |
 | Google Form lunch order | `POST /api/orders` `{type:'lunch'}` | ⚠️ backend works (bug 2 fixed); native form in P3 | P0, P3 |
 | `getOrder` (email / order # / token) | `GET /api/orders/lookup?q=&token=` | ⚠️ token ignored by page, response shape differs, legacy `?order=N&token=` links | P2 |
-| `getEvents` / `getEvent` | `GET /api/events`, `GET /api/events/:slug` | ⚠️ no `description`, `ordering_deadline`, string slug IDs | P4 |
+| `getEvents` / `getEvent` | `GET /api/events`, `GET /api/events/:slug` | ✅ v1 shape, slug IDs | P4 |
 | `registerInterest` | `POST /api/events/:slug/interest` | ✅ (param names differ: handled in `api.js`) | P2 |
-| `createEventOrder` | `POST /api/orders` `{type:'event'}` | ⚠️ no `qty`, no Closed-status/deadline check, no dedicated confirmation | P4 |
+| `createEventOrder` | `POST /api/orders` `{type:'event'}` | ⚠️ slug, qty, Closed check ✅; v1 confirmation email in P6 | P4 |
 | `parentAuth` | `POST /api/parent/auth` → parent session | ✅ (bug 3 fixed) | P0 |
 | `createParentOrder` | `POST /api/parent/orders` (parent session required) | ⚠️ secured + works (bugs 4, 5); multi-child in P4 | P0, P4 |
 | `getVersion` | `GET /api/version` | ❌ | P4 |

@@ -20,10 +20,8 @@ const normalizeSize = s => SIZE_ALIAS[s] || s;
 // discount come from the parent session, never from the request body.
 async function create(req, res) {
   const {
-    eventId,
     payerPhone,
     whatsappOptIn = false,
-    items = [],
     allergyFlag = false,
     allergyNotes,
     paymentMethod,
@@ -42,13 +40,36 @@ async function create(req, res) {
   if (!isParent && !['lunch','event'].includes(orderType)) throw new HttpError(400, 'Invalid order type.');
   if (!payerName)   throw new HttpError(400, 'Name required.');
   if (!payerEmail)  throw new HttpError(400, 'Email required.');
-  if (!items.length) throw new HttpError(400, 'At least one pizza item required.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(payerEmail).trim())) {
+    throw new HttpError(400, 'Please provide a valid email address.');
+  }
   if (paymentMethod && !['bank_transfer','paypal','cash'].includes(paymentMethod)) {
     throw new HttpError(400, 'Invalid paymentMethod.');
   }
 
-  for (const item of items) {
-    if (!PRICE_PENCE[normalizeSize(item.size)]) throw new HttpError(400, `Invalid pizza size: ${item.size}`);
+  // Items may carry a qty (v1 event/parent orders: [{size, qty}]); each pizza
+  // becomes its own item row. v1 limits: valid size, qty 1–50.
+  const items = [];
+  for (const item of Array.isArray(req.body.items) ? req.body.items : []) {
+    if (!PRICE_PENCE[normalizeSize(item.size)]) throw new HttpError(400, 'Invalid pizza size selected.');
+    const qty = item.qty === undefined ? 1 : parseInt(item.qty, 10);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 50) throw new HttpError(400, 'Invalid quantity.');
+    for (let i = 0; i < qty; i++) items.push(item);
+  }
+  if (!items.length) throw new HttpError(400, 'Please include at least one pizza item.');
+
+  // Event orders name their event by slug (v1 Event ID) or internal id.
+  let eventId = null;
+  if (orderType === 'event') {
+    const ref = String(req.body.eventId ?? '').trim();
+    const [event] = await sql`
+      SELECT id, status FROM events
+      WHERE active AND (lower(slug) = lower(${ref}) OR id::text = ${ref})`;
+    if (!event) throw new HttpError(404, 'Event not found');
+    if (String(event.status).toLowerCase() === 'closed') {
+      throw new HttpError(409, 'This event is currently closed for ordering.');
+    }
+    eventId = event.id;
   }
 
   // Idempotency: a repeated submissionId (double-click, retry after a timeout)
