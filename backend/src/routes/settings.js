@@ -3,19 +3,34 @@
 const sql = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
 const { logAudit }  = require('../services/auditService');
+const schedule      = require('../domain/schedule');
 
 async function get(_req, res) {
   const [s] = await sql`SELECT * FROM site_settings WHERE id = 1`;
   res.json({ success: true, settings: s });
 }
 
+const TEXT_FIELDS = ['orders_team_email', 'orders_team_whatsapp', 'capacity_message', 'deadline_message',
+                     'fully_booked_message', 'service_notice_date', 'next_opening_text'];
+const WEEKDAY_FIELDS = ['close_weekday', 'reopen_weekday', 'service_weekday'];
+const TIME_FIELDS    = ['close_time', 'reopen_time'];
+
 async function update(req, res) {
-  const allowed = ['orders_team_email','orders_team_whatsapp','capacity_disclaimer',
-                   'deadline_message','fully_booked_message'];
   const updates = { updated_at: new Date() };
-  for (const k of allowed) {
+  for (const k of TEXT_FIELDS) {
     if (req.body[k] !== undefined) updates[k] = req.body[k];
   }
+  for (const k of WEEKDAY_FIELDS) {
+    if (req.body[k] === undefined) continue;
+    if (!schedule.isValidWeekday(req.body[k])) throw new HttpError(400, `${k} must be 1 (Monday) … 7 (Sunday).`);
+    updates[k] = req.body[k];
+  }
+  for (const k of TIME_FIELDS) {
+    if (req.body[k] === undefined) continue;
+    if (!schedule.isValidTime(req.body[k])) throw new HttpError(400, `${k} must be HH:MM (24-hour).`);
+    updates[k] = req.body[k];
+  }
+  if (req.body.auto_close_enabled !== undefined) updates.auto_close_enabled = Boolean(req.body.auto_close_enabled);
 
   const [s] = await sql`UPDATE site_settings SET ${sql(updates)} WHERE id = 1 RETURNING *`;
   await logAudit({ adminUserId: req.admin.id, action: 'update_site_settings', details: updates });

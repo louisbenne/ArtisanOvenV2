@@ -2,49 +2,30 @@
 
 const sql = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
+const schedule = require('../domain/schedule');
 
+// Superseded by GET /api/status (v1-shaped) — kept for the interim v2 UI.
 async function getCurrent(_req, res) {
   const [session] = await sql`
-    SELECT
-      s.id,
-      s.service_date,
-      s.service_title,
-      s.max_pizzas,
-      s.ordering_open,
-      s.auto_close_at,
-      COALESCE(
-        SUM(
-          CASE i.size
-            WHEN '12inch'      THEN 1.0
-            WHEN 'Half12inch'  THEN 0.5
-            WHEN 'Quarter12inch' THEN 0.25
-          END
-        ), 0
-      )::NUMERIC(6,2) AS current_pizzas
-    FROM ordering_sessions s
-    LEFT JOIN orders     o ON o.session_id = s.id AND NOT o.is_deleted
-    LEFT JOIN order_items i ON i.order_id  = o.id
-    WHERE s.archived_at IS NULL
-    GROUP BY s.id
-    ORDER BY s.created_at DESC
-    LIMIT 1
+    SELECT id, service_date, service_title, max_pizzas, ordering_open
+    FROM   ordering_sessions WHERE archived_at IS NULL ORDER BY id DESC LIMIT 1
   `;
-
   if (!session) {
     return res.json({
-      success: true,
-      orderingOpen: false,
-      serviceTitle: 'No active session',
-      currentPizzas: 0,
-      maxPizzas: 0,
-      remainingPizzas: 0,
+      success: true, orderingOpen: false, serviceTitle: 'No active session',
+      currentPizzas: 0, maxPizzas: 0, remainingPizzas: 0,
     });
   }
 
-  const isPastDeadline = session.auto_close_at && new Date() > new Date(session.auto_close_at);
-  const currentPizzas  = parseFloat(session.current_pizzas);
-  const remaining      = Math.max(0, session.max_pizzas - currentPizzas);
-  const orderingOpen   = session.ordering_open && !isPastDeadline && remaining > 0;
+  const [{ current }] = await sql`
+    SELECT COALESCE(SUM(CASE i.size WHEN '12inch' THEN 1.0 WHEN 'Half12inch' THEN 0.5
+                                    WHEN 'Quarter12inch' THEN 0.25 END), 0)::float AS current
+    FROM   orders o JOIN order_items i ON i.order_id = o.id
+    WHERE  o.session_id = ${session.id} AND o.order_type IN ('lunch', 'parent') AND NOT o.is_deleted
+  `;
+  const [settings] = await sql`SELECT * FROM site_settings WHERE id = 1`;
+  const isPastDeadline = settings ? schedule.isPastDeadline(settings) : false;
+  const remaining      = Math.max(0, session.max_pizzas - current);
 
   res.json({
     success:         true,
@@ -52,17 +33,15 @@ async function getCurrent(_req, res) {
     serviceTitle:    session.service_title,
     serviceDate:     session.service_date,
     maxPizzas:       session.max_pizzas,
-    currentPizzas,
+    currentPizzas:   current,
     remainingPizzas: remaining,
-    orderingOpen,
-    autoCloseAt:     session.auto_close_at,
+    orderingOpen:    session.ordering_open && !isPastDeadline && remaining > 0,
   });
 }
 
 async function adminList(_req, res) {
   const sessions = await sql`
-    SELECT id, service_date, service_title, max_pizzas, ordering_open, auto_close_at,
-           archived_at, created_at
+    SELECT id, service_date, service_title, max_pizzas, ordering_open, archived_at, created_at
     FROM   ordering_sessions
     ORDER  BY created_at DESC
     LIMIT  50
@@ -71,22 +50,21 @@ async function adminList(_req, res) {
 }
 
 async function adminCreate(req, res) {
-  const { serviceDate, serviceTitle, maxPizzas, autoCloseAt } = req.body;
+  const { serviceDate, serviceTitle, maxPizzas } = req.body;
   if (!serviceDate || !serviceTitle || !maxPizzas) {
     throw new HttpError(400, 'serviceDate, serviceTitle, maxPizzas required.');
   }
 
-  // Archive the current open session if one exists.
-  await sql`
-    UPDATE ordering_sessions SET archived_at = now()
-    WHERE  archived_at IS NULL
-  `;
-
-  const [session] = await sql`
-    INSERT INTO ordering_sessions (service_date, service_title, max_pizzas, auto_close_at)
-    VALUES (${serviceDate}, ${serviceTitle}, ${maxPizzas}, ${autoCloseAt ?? null})
-    RETURNING *
-  `;
+  const session = await sql.begin(async tx => {
+    // Archive the current open session (history is kept, never deleted).
+    await tx`UPDATE ordering_sessions SET archived_at = now() WHERE archived_at IS NULL`;
+    const [s] = await tx`
+      INSERT INTO ordering_sessions (service_date, service_title, max_pizzas)
+      VALUES (${serviceDate}, ${serviceTitle}, ${maxPizzas})
+      RETURNING *
+    `;
+    return s;
+  });
 
   res.status(201).json({ success: true, session });
 }
@@ -94,7 +72,7 @@ async function adminCreate(req, res) {
 async function adminUpdate(req, res) {
   const { id } = req.params;
   const fields  = {};
-  const allowed = ['service_title', 'max_pizzas', 'ordering_open', 'auto_close_at'];
+  const allowed = ['service_date', 'service_title', 'max_pizzas', 'ordering_open'];
 
   for (const k of allowed) {
     if (req.body[k] !== undefined) fields[k] = req.body[k];

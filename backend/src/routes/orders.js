@@ -7,6 +7,7 @@ const { applyDiscount } = require('../services/discountService');
 const { notifyOrder }   = require('../services/notificationService');
 const orderNumbers      = require('../domain/orderNumbers');
 const { isUuid }        = require('../util/tokens');
+const schedule          = require('../domain/schedule');
 
 const PRICE_PENCE  = { '12inch': 800, 'Half12inch': 500, 'Quarter12inch': 300 };
 const CAPACITY     = { '12inch': 1.0, 'Half12inch': 0.5, 'Quarter12inch': 0.25 };
@@ -84,7 +85,7 @@ async function create(req, res) {
       // Lock the session row first: concurrent orders queue here, so the
       // capacity sum below can't be stale. (Postgres forbids FOR UPDATE with GROUP BY.)
       const [session] = await sql`
-        SELECT id, max_pizzas, ordering_open, auto_close_at
+        SELECT id, max_pizzas, ordering_open
         FROM   ordering_sessions
         WHERE  archived_at IS NULL
         ORDER  BY id DESC
@@ -106,7 +107,8 @@ async function create(req, res) {
       `;
       session.current_pizzas = current_pizzas;
       if (!session.ordering_open) throw new HttpError(409, 'Ordering is currently closed.');
-      if (session.auto_close_at && new Date() > new Date(session.auto_close_at)) {
+      const [settings] = await sql`SELECT * FROM site_settings WHERE id = 1`;
+      if (settings && schedule.isPastDeadline(settings)) {
         throw new HttpError(409, 'Ordering deadline has passed.');
       }
 

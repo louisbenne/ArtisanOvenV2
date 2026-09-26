@@ -72,7 +72,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 ### Stage D — Backend data the v1 pages need (Phase 4 tasks 1–3, 8 pulled forward)
 | # | Branch | Scope | Status |
 |---|---|---|---|
-| D1 | `phase-4-settings-schedule` | Settings columns + `domain/schedule.js` (Europe/London, BST/GMT tests) | ⬜ |
+| D1 | `phase-4-settings-schedule` | Settings columns + `domain/schedule.js` (Europe/London, BST/GMT tests) | ✅ |
 | D2 | `phase-4-status` | `GET /api/status` with v1 fields + cache | ⬜ |
 | D3 | `phase-4-events` | slugs, description, deadline, qty, Closed/deadline checks | ⬜ |
 | D4 | `phase-4-small-endpoints` | discount check, version, change password | ⬜ |
