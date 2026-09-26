@@ -2,6 +2,7 @@
 
 const sql = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
+const { displayRef, pickupId } = require('../domain/orderNumbers');
 
 async function getBoard(_req, res) {
   const [session] = await sql`
@@ -12,7 +13,8 @@ async function getBoard(_req, res) {
   const rows = await sql`
     SELECT
       o.id            AS order_db_id,
-      o.public_order_code,
+      o.order_number,
+      o.order_ref,
       o.payment_method,
       o.payment_status,
       o.allergy_flag,
@@ -32,14 +34,16 @@ async function getBoard(_req, res) {
     JOIN   customers   c ON c.id = o.customer_id
     WHERE  o.session_id = ${session.id}
       AND  NOT o.is_deleted
-    ORDER  BY o.public_order_code, i.id
+    ORDER  BY o.order_number, i.id
   `;
 
   const orderMap = new Map();
   for (const row of rows) {
     if (!orderMap.has(row.order_db_id)) {
       orderMap.set(row.order_db_id, {
-        orderCode:     row.public_order_code,
+        id:            row.order_db_id,
+        orderRef:      row.order_ref,
+        orderId:       displayRef(row.order_ref),
         payerName:     row.payer_name,
         paymentMethod: row.payment_method,
         paymentStatus: row.payment_status,
@@ -49,8 +53,10 @@ async function getBoard(_req, res) {
         items:         [],
       });
     }
-    orderMap.get(row.order_db_id).items.push({
+    const entry = orderMap.get(row.order_db_id);
+    entry.items.push({
       id:         row.item_id,
+      pickupId:   pickupId(row.order_ref, entry.items.length + 1),   // v1: 12-1, E101-2
       childName:  row.child_name,
       childClass: row.child_class,
       size:       row.size,

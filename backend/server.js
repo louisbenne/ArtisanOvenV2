@@ -13,6 +13,11 @@ const { errorHandler } = require('./src/middleware/errorHandler');
 const { initSockets }  = require('./src/sockets');
 
 const app    = express();
+
+// Behind Caddy (and possibly a tunnel) on private networks: trust those hops so
+// req.ip is the real visitor from X-Forwarded-For (rate limiting depends on it).
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
+
 const server = http.createServer(app);
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
@@ -61,17 +66,29 @@ app.use(errorHandler);
 
 // Wrap async route handlers automatically so they don't need try/catch.
 // Must be called after all routes are registered.
-wrapAsync(app);
+wrapAsync(app._router.stack);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-const PORT = parseInt(process.env.PORT || '3000', 10);
-server.listen(PORT, () => {
-  console.log(`[artisan-oven] backend listening on :${PORT}`);
-});
+// Only listen when run directly (`node server.js`); tests import { app, server }.
+if (require.main === module) {
+  // Last-resort net: a stray rejected promise outside Express (sockets, timers,
+  // fire-and-forget emails) must not take the whole site down (bugs 0, 16).
+  process.on('unhandledRejection', err => {
+    console.error(`[${new Date().toISOString()}] unhandled rejection:`, err);
+  });
+
+  const PORT = parseInt(process.env.PORT || '3000', 10);
+  server.listen(PORT, () => {
+    console.log(`[artisan-oven] backend listening on :${PORT}`);
+  });
+}
 
 // ── Utility: auto-wrap async route handlers ───────────────────────────────────
-function wrapAsync(app) {
-  for (const layer of app._router?.stack || []) {
+// Takes a layer stack (app._router.stack, or a Router's own .stack) and recurses
+// into mounted Routers. Without this, a rejected handler promise is unhandled and
+// Node exits the whole process.
+function wrapAsync(stack) {
+  for (const layer of stack) {
     if (layer.route) {
       for (const rl of layer.route.stack) {
         if (rl.handle?.constructor?.name === 'AsyncFunction') {
@@ -79,8 +96,8 @@ function wrapAsync(app) {
           rl.handle = (req, res, next) => orig(req, res, next).catch(next);
         }
       }
-    } else if (layer.handle?.stack) {
-      wrapAsync(layer.handle);
+    } else if (Array.isArray(layer.handle?.stack)) {
+      wrapAsync(layer.handle.stack);
     }
   }
 }

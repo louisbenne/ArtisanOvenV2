@@ -1,0 +1,18 @@
+{
+  "name": "artisan-oven-v2",
+  "private": true,
+  "description": "One-word wrappers around the Docker Compose stacks (see CLAUDE.md → Commands).",
+  "scripts": {
+    "dev":         "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up --build",
+    "dev:up":      "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up --build -d",
+    "dev:restart": "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml restart api",
+    "dev:down":    "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml down",
+    "reset-db":    "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml down -v && npm run dev:up",
+    "test":        "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml run --rm -T api npm test",
+    "logs":        "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml logs -f api",
+    "prod:up":     "docker compose -p ao-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml up --build -d",
+    "prod:down":   "docker compose -p ao-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml down",
+    "prod:logs":   "docker compose -p ao-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml logs -f api",
+    "prod:ps":     "docker compose -p ao-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml ps"
+  }
+}

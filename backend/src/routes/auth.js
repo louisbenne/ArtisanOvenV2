@@ -4,23 +4,30 @@ const bcrypt = require('bcrypt');
 const sql    = require('../db');
 const { logAudit } = require('../services/auditService');
 const { HttpError } = require('../middleware/errorHandler');
+const { bearerToken } = require('../util/tokens');
 
 const SESSION_TTL_HOURS = 12;
 
+// Louis's decision (D8): the admin page asks for a password only, like v1.
+// Without a username we check the password against every active account and
+// log in as the highest-ranked match. A username is still accepted if sent.
+const ROLE_RANK = { owner: 4, treasurer: 3, kitchen: 2, volunteer: 1 };
+
 async function adminLogin(req, res) {
   const { username, password } = req.body;
-  if (!username || !password) throw new HttpError(400, 'Username and password required.');
+  if (!password) throw new HttpError(400, 'Password required.');
 
-  const [user] = await sql`
-    SELECT id, username, password_hash, role, active
-    FROM   admin_users
-    WHERE  username = ${username.trim().toLowerCase()}
-  `;
+  const candidates = username
+    ? await sql`SELECT id, username, password_hash, role FROM admin_users
+                WHERE username = ${String(username).trim().toLowerCase()} AND active`
+    : await sql`SELECT id, username, password_hash, role FROM admin_users WHERE active`;
+  candidates.sort((a, b) => (ROLE_RANK[b.role] ?? 0) - (ROLE_RANK[a.role] ?? 0));
 
-  if (!user || !user.active) throw new HttpError(401, 'Invalid credentials.');
-
-  const match = await bcrypt.compare(password, user.password_hash);
-  if (!match) throw new HttpError(401, 'Invalid credentials.');
+  let user = null;
+  for (const c of candidates) {
+    if (await bcrypt.compare(password, c.password_hash)) { user = c; break; }
+  }
+  if (!user) throw new HttpError(401, 'Access denied. Incorrect password.');
 
   const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 3600 * 1000);
   const [session] = await sql`
@@ -35,7 +42,8 @@ async function adminLogin(req, res) {
 }
 
 async function adminLogout(req, res) {
-  await sql`DELETE FROM admin_sessions WHERE token = ${req.headers['authorization']?.replace(/^Bearer\s+/, '')}`;
+  const token = bearerToken(req);
+  if (token) await sql`DELETE FROM admin_sessions WHERE token = ${token}`;
   res.json({ success: true });
 }
 
@@ -54,21 +62,17 @@ async function parentAuth(req, res) {
 
   if (!row) throw new HttpError(401, 'Invalid access code.');
 
-  // Short-lived token stored in the DB for 12 hours (same TTL used for admin sessions).
-  const expiresAt = new Date(Date.now() + 12 * 3600 * 1000);
+  // A PARENT session (parent_sessions), 12 hours like v1 — never an admin session.
+  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 3600 * 1000);
   const [session] = await sql`
-    INSERT INTO admin_sessions (admin_user_id, expires_at)
-    SELECT id, ${expiresAt} FROM admin_users WHERE username = 'parent_gate' AND active
+    INSERT INTO parent_sessions (access_code, expires_at)
+    VALUES (${row.code}, ${expiresAt})
     RETURNING token
   `;
 
-  // If no parent_gate pseudo-user exists yet, issue a token differently.
-  // In practice the seed should create one; this is a safety fallback.
-  const token = session?.token || require('crypto').randomUUID();
-
   res.json({
     success:      true,
-    token,
+    token:        session.token,
     discountCode: row.linked_discount_code,
     discountPct:  row.percent_off,
     discountFlat: row.flat_off_pence,

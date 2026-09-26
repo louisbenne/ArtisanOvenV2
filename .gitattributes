@@ -1,2 +1,10 @@
+# Everything is LF in the repo and in the working tree (Linux containers read these files).
+* text=auto eol=lf
+
 # Shell scripts run inside Linux containers — must be LF even on Windows.
 *.sh text eol=lf
+
+# v1 files must stay byte-identical to v1 (no CRLF conversion on Windows).
+docs/v1-reference/** -text
+docs/v1-reference-extra/** -text
+public/** -text

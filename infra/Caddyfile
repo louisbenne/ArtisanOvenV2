@@ -1,7 +1,7 @@
 # The backend serves the API, Socket.IO, and the static frontend/admin
-# files (same as on Railway), so Caddy just terminates TLS and proxies.
+# files, so Caddy just terminates TLS and proxies.
 (app) {
-    reverse_proxy backend:3000
+    reverse_proxy api:3000
 
     encode gzip zstd
 

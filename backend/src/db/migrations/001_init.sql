@@ -1,5 +1,6 @@
--- Artisan Oven v2 — PostgreSQL schema
--- Run once against a fresh database, or replay migrations in order.
+-- 001 — initial schema (the v2 foundation).
+-- Idempotent on purpose: databases created before the migrations system existed
+-- already have these tables, and 001 is recorded as applied on their first run.
 
 -- ─── Customers ────────────────────────────────────────────────────────────────
 -- Replaces v1's repeated free-text name/email per row with a real entity.
@@ -166,11 +167,17 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 );
 CREATE INDEX IF NOT EXISTS admin_sessions_user_idx ON admin_sessions (admin_user_id);
 
--- Add the FK that payments needs (admin_users now exists)
-ALTER TABLE payments
-  ADD CONSTRAINT payments_recorded_by_fkey
-  FOREIGN KEY (recorded_by) REFERENCES admin_users(id)
-  NOT VALID;  -- NOT VALID so it doesn't scan existing rows on first run
+-- Add the FK that payments needs (admin_users now exists).
+-- Guarded so re-running the schema (every container start) doesn't fail.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payments_recorded_by_fkey') THEN
+    ALTER TABLE payments
+      ADD CONSTRAINT payments_recorded_by_fkey
+      FOREIGN KEY (recorded_by) REFERENCES admin_users(id)
+      NOT VALID;  -- NOT VALID so it doesn't scan existing rows on first run
+  END IF;
+END $$;
 
 -- ─── Audit Log ────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS audit_log (

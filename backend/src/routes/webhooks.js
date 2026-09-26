@@ -61,7 +61,8 @@ async function verifyPayPalSignature(req) {
 
 // ── PayPal webhook ─────────────────────────────────────────────────────────────
 // PayPal sends a PAYMENT.CAPTURE.COMPLETED event with custom_id set to the
-// public_order_code when the buyer completes payment via the PayPal button.
+// order's access_token (unique; lunch numbers repeat weekly) when the buyer
+// completes payment via the PayPal button. Disabled for launch (plan D5).
 async function paypal(req, res) {
   if (!process.env.PAYPAL_WEBHOOK_ID) {
     return res.status(200).json({ received: true });
@@ -85,7 +86,7 @@ async function paypal(req, res) {
   if (!orderCode || !amount) return res.status(200).json({ received: true });
 
   const [order] = await sql`
-    SELECT id, total_pence FROM orders WHERE upper(public_order_code) = ${orderCode.toUpperCase()}
+    SELECT id, total_pence FROM orders WHERE access_token::text = ${String(orderCode)}
   `;
   if (!order) return res.status(200).json({ received: true });
 

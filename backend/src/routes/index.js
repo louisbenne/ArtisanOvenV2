@@ -6,6 +6,7 @@
 const { Router } = require('express');
 const { requireAuth } = require('../middleware/requireAuth');
 const { rateLimit }   = require('../middleware/rateLimit');
+const { requireParent } = require('../middleware/requireParent');
 
 const auth      = require('./auth');
 const sessions  = require('./sessions');
@@ -27,7 +28,7 @@ router.get( '/events/:id',             events.get);
 router.post('/events/:id/interest',    rateLimit({ max: 5 }), events.registerInterest);
 router.post('/orders',                 rateLimit({ max: 10 }), orders.create);
 router.post('/parent/auth',            rateLimit({ max: 10 }), auth.parentAuth);
-router.post('/parent-orders',          rateLimit({ max: 10 }), orders.createParent);
+router.post('/parent/orders',          rateLimit({ max: 10 }), requireParent(), orders.createParent);
 
 // ── Webhooks (externally called — verified by signature, not admin token) ────
 router.post('/webhooks/paypal',        webhooks.paypal);
