@@ -89,7 +89,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | F2 | `phase-4-payments-dashboard` | mark-paid/unpaid ledger, dashboard endpoint | ⬜ |
 | F3 | `phase-4-new-week` | Start New Week (archive + summary email) | ⬜ |
 | F4 | `phase-4-exports` | xlsx (v1 layout), checklist HTML, pickup IDs | ⬜ |
-| F5 | `phase-5-admin` | v1 `admin.html` wired to REST (+ username field, v2-only cards) | ⬜ |
+| F5 | `phase-5-admin` | v1 `admin.html` wired to REST (password-only login as v1, v2-only cards) | ⬜ |
 | F6 | `phase-5-kitchen` | v1 kitchen board, server ticks + socket sync | ⬜ |
 | F7 | `phase-6-emails` | Every v1 email template, provider from env | ⬜ |
 
@@ -116,7 +116,8 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | # | Question | Default if no answer | Needed by |
 |---|---|---|---|
 | D2 | Email: Gmail SMTP app password, or Resend/Postmark with SPF/DKIM? | Build provider-agnostic SMTP; ask before F7 goes live | F7 |
-| D3/D6/D8/D5/D9 | Master-plan recommendations (v1 admin look, hide toppings, username field, webhooks off, Monday cutover) | **Accepted as recommended** | — |
+| D3/D6/D5/D9 | Master-plan recommendations (v1 admin look, hide toppings, webhooks off, Monday cutover) | **Accepted as recommended** | — |
+| D8 | Admin login | ✅ **Decided by Louis: password only, no username** (like v1). Backend accepts a bare password (`phase-4-password-only-login`). | done |
 | P1 | Checklist PDF: Playwright/Chromium vs pdfkit (new dependency) | Ask at F4 | F4 |
 | H1 | Production domain route: Cloudflare Tunnel (**recommended** — no open ports, home IP can change) vs router port-forward | Ask at G3 | G3 |
 | M1 | v1 workbook export (.xlsx, all tabs) + `NEXT_ORDER_NUMBER` script property | Needed at cutover | G1 |
