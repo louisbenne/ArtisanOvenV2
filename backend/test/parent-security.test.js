@@ -70,12 +70,16 @@ test('bug 5: a parent order is accepted, typed parent, E-numbered, with MUTTI ap
   assert.deepEqual({ ...o }, { order_type: 'parent', discount_code: 'MUTTI' });
 });
 
-test('parent orders do not use up lunch capacity (as in v1)', async () => {
-  await createSession(sql, { maxPizzas: 1 });
+test('parent orders count toward the session\'s capacity but are never refused for it (as in v1)', async () => {
+  const session = await createSession(sql, { maxPizzas: 2 });
   const parent = await parentLogin();
-  const two = lunchOrder({ items: [{ size: '12inch' }, { size: '12inch' }] });
-  assert.equal((await app.api('POST', '/api/parent/orders', two, parent)).status, 201);
-  assert.equal((await app.api('POST', '/api/orders', lunchOrder())).status, 201);
+  const one = lunchOrder({ items: [{ size: '12inch' }] });
+  assert.equal((await app.api('POST', '/api/parent/orders', one, parent)).status, 201);
+  assert.equal((await app.api('POST', '/api/orders', lunchOrder())).status, 201);   // 2 of 2
+  assert.equal((await app.api('POST', '/api/orders', lunchOrder())).status, 409);   // full for the public
+  assert.equal((await app.api('POST', '/api/parent/orders', one, parent)).status, 201);   // v1: parents still go through
+  const [{ n }] = await sql`SELECT count(*)::int AS n FROM orders WHERE session_id = ${session.id} AND order_type = 'parent'`;
+  assert.equal(n, 2);
 });
 
 test('expired sessions and deactivated codes are rejected', async () => {

@@ -29,6 +29,7 @@ needed. Update the status column as branches land.
 | C14 | **Bug 15 (new, hidden behind bug 2):** any omitted optional field (e.g. `termsAcceptedAt`) was `undefined`, which postgres.js rejects → 500. | Fixed in B5: `transform: { undefined: null }` in the DB client. |
 | C15 | `node --watch` gets no file events from a Windows folder bind-mounted into Docker. | Dev uses `npm run dev:restart` instead. |
 | C16 | **Bug 16 (new, critical):** one unauthenticated Socket.IO message with a malformed token crashed the server (uuid query error in socket auth, outside Express). Malformed bearer tokens also gave 500s. | Fixed in B10 and deployed immediately: UUID validation before any token query, socket auth try/catch, last-resort `unhandledRejection` logger. |
+| C17 | My B7 excluded parent orders from capacity, saying v1 did — wrong: v1 `getStatus` counts internal parent orders in `currentPizzas` (but `createParentOrder` never refuses one for capacity). | Fixed in `phase-0-parent-capacity`: parent orders join the current session and count; never refused. |
 
 ## 2. Branch / PR workflow
 
@@ -60,6 +61,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | B8 | `phase-0-aggregates` | Bugs 7, 8, 11 (task 5) | ✅ |
 | B9 | `phase-0-idempotency` | Bug 12: `orders.submission_id` (task 6) | ✅ |
 | B10 | `phase-0-header-auth` | Bug 13: token only in `Authorization` (task 7) | ✅ |
+| B11 | `phase-0-parent-capacity` | Correction to B7: parent orders count toward capacity like v1 | ✅ |
 
 ### Stage C — Phase 1: v1's frontend, verbatim
 | # | Branch | Scope | Status |

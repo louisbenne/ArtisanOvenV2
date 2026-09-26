@@ -69,8 +69,17 @@ async function create(req, res) {
 
   // Capacity check + order insert in one transaction.
   const result = await sql.begin(async sql => {
-    // 1. Find current session (lunch orders only).
+    // 1. Find the current session. Lunch AND parent orders belong to it and use
+    //    its capacity (v1's getStatus counts both); event orders don't.
     let sessionId = null;
+    if (orderType === 'parent') {
+      // v1 never refuses a parent order for capacity or deadline — it just counts.
+      // Lock the row anyway so lunch capacity checks see this order consistently.
+      const [session] = await sql`
+        SELECT id FROM ordering_sessions WHERE archived_at IS NULL ORDER BY id DESC LIMIT 1 FOR UPDATE
+      `;
+      sessionId = session?.id ?? null;
+    }
     if (orderType === 'lunch') {
       // Lock the session row first: concurrent orders queue here, so the
       // capacity sum below can't be stale. (Postgres forbids FOR UPDATE with GROUP BY.)
@@ -93,7 +102,7 @@ async function create(req, res) {
                ), 0)::NUMERIC(6,2) AS current_pizzas
         FROM   orders o
         JOIN   order_items i ON i.order_id = o.id
-        WHERE  o.session_id = ${session.id} AND o.order_type = 'lunch' AND NOT o.is_deleted
+        WHERE  o.session_id = ${session.id} AND o.order_type IN ('lunch', 'parent') AND NOT o.is_deleted
       `;
       session.current_pizzas = current_pizzas;
       if (!session.ordering_open) throw new HttpError(409, 'Ordering is currently closed.');
