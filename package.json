@@ -9,6 +9,7 @@
     "dev:down":    "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml down",
     "reset-db":    "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml down -v && npm run dev:up",
     "test":        "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml run --rm -T api npm test",
+    "e2e":         "node tools/run-e2e.js",
     "logs":        "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml logs -f api",
     "prod:up":     "docker compose -p ao-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml up --build -d",
     "prod:down":   "docker compose -p ao-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml down",

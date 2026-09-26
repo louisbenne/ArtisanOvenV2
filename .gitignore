@@ -24,3 +24,8 @@ redis-data/
 # Backups
 backups/
 *.sql.gz
+
+# Playwright
+e2e/node_modules/
+e2e/report/
+e2e/test-results/

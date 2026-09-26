@@ -1,0 +1,11 @@
+{
+  "name": "artisan-oven-e2e",
+  "private": true,
+  "description": "Playwright visual baseline (v1) and comparison (v2). Run via `npm run e2e` at the repo root.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

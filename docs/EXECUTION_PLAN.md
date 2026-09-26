@@ -67,7 +67,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | # | Branch | Scope | Status |
 |---|---|---|---|
 | C1 | `phase-1-public` | v1 files → `public/` byte-identical (home page from `0c2a41c^`), v1 URLs/aliases/cache headers, `live.html` → `/`, old v2 UI → `legacy-v2-ui/`, CI byte-check script | ✅ |
-| C2 | `phase-1-fixtures-baseline` | Fixture dataset (v1 JSON + v2 seed), Playwright baseline screenshots of every v1 screen | ⬜ |
+| C2 | `phase-1-fixtures-baseline` | Fixture dataset + v1 mock API, Playwright baseline of every PUBLIC v1 screen (admin/kitchen baselines move to F5/F6, where their API shapes are ported) | ✅ |
 
 ### Stage D — Backend data the v1 pages need (Phase 4 tasks 1–3, 8 pulled forward)
 | # | Branch | Scope | Status |
