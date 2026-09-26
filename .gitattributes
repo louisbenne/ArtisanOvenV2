@@ -1,3 +1,6 @@
+# Everything is LF in the repo and in the working tree (Linux containers read these files).
+* text=auto eol=lf
+
 # Shell scripts run inside Linux containers — must be LF even on Windows.
 *.sh text eol=lf
 

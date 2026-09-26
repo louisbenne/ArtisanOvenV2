@@ -3,8 +3,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Install backend dependencies (cached unless package.json changes)
-COPY backend/package.json ./backend/package.json
-RUN cd backend && npm install --omit=dev && npm cache clean --force
+COPY backend/package.json backend/package-lock.json ./backend/
+RUN cd backend && npm ci --omit=dev && npm cache clean --force
 
 # Copy source — backend needs ../frontend and ../admin at runtime
 COPY backend ./backend

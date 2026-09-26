@@ -64,10 +64,13 @@ app.use(errorHandler);
 wrapAsync(app._router.stack);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-const PORT = parseInt(process.env.PORT || '3000', 10);
-server.listen(PORT, () => {
-  console.log(`[artisan-oven] backend listening on :${PORT}`);
-});
+// Only listen when run directly (`node server.js`); tests import { app, server }.
+if (require.main === module) {
+  const PORT = parseInt(process.env.PORT || '3000', 10);
+  server.listen(PORT, () => {
+    console.log(`[artisan-oven] backend listening on :${PORT}`);
+  });
+}
 
 // ── Utility: auto-wrap async route handlers ───────────────────────────────────
 // Takes a layer stack (app._router.stack, or a Router's own .stack) and recurses
