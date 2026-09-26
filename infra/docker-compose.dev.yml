@@ -1,0 +1,40 @@
+# Dev/test overlay: plain HTTP on :8080, every email caught by Mailpit.
+#   npm run dev        → site + API  http://localhost:8080
+#                        Mailpit     http://localhost:8025
+#   npm test           → backend tests inside the api container (real Postgres 16)
+
+services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:-devpassword}
+
+  api:
+    environment:
+      DB_PASS:       ${DB_PASS:-devpassword}
+      NODE_ENV:      development
+      # Never real SMTP in dev — everything lands in Mailpit.
+      SMTP_HOST:     mailpit
+      SMTP_PORT:     "1025"
+      SMTP_SECURE:   "false"
+      SMTP_USER:     ""
+      SMTP_PASS:     ""
+      FRONTEND_URL:  http://localhost:8080
+      FRONTEND_ORIGIN: http://localhost:8080
+      # Seeded on first start (dev only).
+      ADMIN_USERNAME: ${DEV_ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-admin}
+    command: ["sh", "-c", "node src/db/migrate.js && node scripts/seed-admin.js && exec node server.js"]
+    ports:
+      - "8080:3000"
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  backup:
+    environment:
+      PGPASSWORD: ${DB_PASS:-devpassword}
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "8025:8025"

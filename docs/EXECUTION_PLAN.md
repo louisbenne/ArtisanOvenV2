@@ -47,7 +47,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | # | Branch | Scope | Status |
 |---|---|---|---|
 | B1 | `phase-0-repo-prep` | CLAUDE.md, docs, PARITY.md, this plan, v1 snapshot, `v1-reference-extra/index.html` | ✅ |
-| B2 | `phase-0-docker-stack` | base/dev/prod compose, `api` rename, Mailpit, npm wrappers, drop Railway, `DB_SSL` opt-in, one `infra/.env`, README | ⬜ |
+| B2 | `phase-0-docker-stack` | base/dev/prod compose, `api` rename, Mailpit, npm wrappers, drop Railway, `DB_SSL` opt-in, one `infra/.env`, README | ✅ |
 | B3 | `phase-0-test-harness` | `node --test`, fresh DB per run, CI (GitHub Actions + postgres:16), bug 0/1 regression tests | ⬜ |
 | B4 | `phase-0-migrations` | `migrations/NNN_*.sql` + `schema_migrations`, baseline existing DBs (task 2) | ⬜ |
 | B5 | `phase-0-lunch-transaction` | Bug 2 + concurrency test (task 3) | ⬜ |

@@ -1,0 +1,44 @@
+# Production overlay: Caddy (HTTPS) in front, everything restarts on failure/boot.
+#   npm run prod:up
+#
+# SITE_ADDRESS (infra/.env):
+#   artisanoven.shop → real Let's Encrypt certificate (needs ports 80/443 reachable)
+#   localhost        → Caddy's local CA (default)
+# 127.0.0.1:8081 is a plain-HTTP entry for a tunnel that terminates TLS itself
+# (Tailscale Funnel today: `tailscale funnel --bg http://127.0.0.1:8081`).
+
+services:
+  db:
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:?Set DB_PASS in infra/.env}
+
+  api:
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DB_PASS:  ${DB_PASS:?Set DB_PASS in infra/.env}
+
+  backup:
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  caddy_data:
+  caddy_config:

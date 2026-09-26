@@ -1,36 +1,35 @@
-# Production stack: Postgres + backend + Caddy (TLS) + nightly backups.
+# Base stack shared by dev and prod: Postgres + API + nightly backup.
+# Never run this file alone — use the npm wrappers in the root package.json:
+#   npm run dev       (this + docker-compose.dev.yml)
+#   npm run prod:up   (this + docker-compose.prod.yml)
 #
-#   cd infra
-#   docker compose up -d --build
-#
-# Reads secrets from ../.env (backend) and infra/.env (DB_PASS, SITE_ADDRESS).
+# Secrets and settings: infra/.env (copy infra/.env.example).
 
 services:
 
   # ── PostgreSQL ───────────────────────────────────────────────────────────────
   db:
     image: postgres:16-alpine
-    restart: unless-stopped
     environment:
       POSTGRES_DB:       artisanoven
       POSTGRES_USER:     artisanoven
-      POSTGRES_PASSWORD: ${DB_PASS:?Set DB_PASS in infra/.env}
+      POSTGRES_PASSWORD: ${DB_PASS}
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U artisanoven -d artisanoven"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 5
-    networks: [internal]
+      retries: 10
 
-  # ── Backend API (runs migrations on start) ───────────────────────────────────
-  backend:
+  # ── API + static site (runs migrations on start) ─────────────────────────────
+  api:
     build:
       context: ..
       dockerfile: backend/Dockerfile
-    restart: unless-stopped
-    env_file: ../.env
+    env_file:
+      - path: .env
+        required: false
     environment:
       DB_HOST: db
       DB_PORT: "5432"
@@ -41,31 +40,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks: [internal, web]
 
-  # ── Caddy (reverse proxy + auto HTTPS) ───────────────────────────────────────
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-      - "127.0.0.1:8080:8080"   # tunnel entry (Tailscale Funnel)
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - backend
-    networks: [web]
-
-  # ── Nightly backup (one on start, then every 24h) ────────────────────────────
+  # ── Nightly backup (one on start, then every 24h; keeps 14 days) ─────────────
   backup:
     image: postgres:16-alpine
-    restart: unless-stopped
     environment:
       PGPASSWORD: ${DB_PASS}
     volumes:
@@ -75,14 +53,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks: [internal]
-
-networks:
-  internal:
-  web:
 
 volumes:
   db_data:
-  caddy_data:
-  caddy_config:
   backup_data:

@@ -1,104 +1,58 @@
 # Artisan Oven V2
 
-**https://artisanoven.shop**
+Pizza ordering for a student-run enterprise — the v1 site (**https://artisanoven.shop**)
+rebuilt on Node.js + PostgreSQL, looking exactly like v1.
 
-Self-hosted pizza ordering system for a student-run enterprise.
-Replaces the Google Forms / Sheets / Apps Script stack with a proper
-Node.js + PostgreSQL backend, real-time kitchen board, and three
-installable PWA apps.
-
----
+- Rules for contributors / Claude Code: [`CLAUDE.md`](CLAUDE.md)
+- The plan: [`docs/V2_MASTER_PLAN.md`](docs/V2_MASTER_PLAN.md) · order of work and status:
+  [`docs/EXECUTION_PLAN.md`](docs/EXECUTION_PLAN.md) · feature parity: [`docs/PARITY.md`](docs/PARITY.md)
+- v1 reference (read-only): [`docs/v1-reference/`](docs/v1-reference/)
 
 ## Stack
 
 | Layer | Tech |
 |---|---|
-| API | Node.js + Express |
-| Database | PostgreSQL (postgres.js tagged templates) |
+| API | Node.js 20 + Express |
+| Database | PostgreSQL 16 (postgres.js tagged templates, no ORM) |
 | Real-time | Socket.IO (`/admin` + `/kitchen` namespaces) |
-| Frontend | Plain HTML / CSS / JS — no build step |
-| Infra | Docker Compose + Caddy reverse proxy |
+| Frontend | v1's plain HTML / CSS / JS — no build step |
+| Infra | Docker Compose (+ Caddy for HTTPS in production) |
 
-## Apps
+## Run it
 
-| App | Path | Audience |
-|---|---|---|
-| Order form | `/frontend/` | Students placing lunch / event orders |
-| Parent portal | `/frontend/parent-order.html` | Internal parents with access code |
-| Admin | `/admin/` | Staff (orders, money, events, comms, settings) |
-| Kitchen board | `/admin/kitchen.html` | Kitchen volunteers — real-time tick-off |
-
-Each app ships as an installable PWA with its own manifest and service worker.
-
-## Quick start
+Needs Docker Desktop and Node/npm (only for the wrapper scripts).
 
 ```bash
-cd backend
-cp .env.example .env      # fill in DB_* and JWT_SECRET
-npm install
-npm run migrate           # creates tables
-node scripts/seed-admin.js  # creates owner account
-npm run dev               # starts on PORT (default 3001)
+cp infra/.env.example infra/.env   # set DB_PASS at least
+npm run dev                        # http://localhost:8080 · Mailpit http://localhost:8025
+npm test                           # tests against a real Postgres 16
 ```
 
-Serve the frontend statically:
+Production on this machine:
 
 ```bash
-npx serve .               # repo root → localhost:3000
+npm run prod:up                    # Caddy on 80/443 (SITE_ADDRESS in infra/.env)
+                                   # + plain-HTTP tunnel entry on 127.0.0.1:8081
 ```
 
-Or use the Docker Compose stack in `infra/` which wires Caddy, Postgres, Redis, and the API together.
+First admin account (production):
+
+```bash
+docker compose -p ao-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml \
+  exec -e ADMIN_PASSWORD='<choose one>' api node scripts/seed-admin.js
+```
 
 ## Environment variables
 
-See `backend/.env.example`. Required:
-
-| Variable | Purpose |
-|---|---|
-| `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | PostgreSQL connection |
-| `PORT` | API port (default 3001) |
-| `FRONTEND_URL` | CORS origin (`https://artisanoven.shop`) |
-| `JWT_SECRET` | Admin session tokens |
-
-Optional (notifications):
-
-| Variable | Purpose |
-|---|---|
-| `SMTP_*` | Outbound email via nodemailer |
-| `WHATSAPP_*` | Meta Cloud API |
-| `PAYPAL_*` | Webhook signature verification |
-
-## Key design decisions
-
-- **Unified orders table** — lunch, event, and parent orders share one `orders` + `order_items` schema. No more separate sheets.
-- **Ledger payments** — `payments` table (positive = payment, negative = refund). `payment_status` is derived from `SUM(payments)`.
-- **Fractional pizza capacity** — 12inch=1.0, Half=0.5, Quarter=0.25 summed as NUMERIC.
-- **Atomic order codes** — `order_code_counters` table; `UPDATE … RETURNING next_val - 1` inside a transaction guarantees no gaps under concurrency.
-- **Role hierarchy** — owner(4) → treasurer(3) → kitchen(2) → volunteer(1). `requireAuth(minRole)` in every admin route.
-- **`sql.begin()` transactions** — capacity check + counter increment + order insert are atomic.
-
-## V1 migration
-
-```bash
-node backend/scripts/migrate-from-v1.js --csv export.csv
-```
-
-Expects columns: `Name`, `Email`, `Size`, `Topping`, `Paid`, `Notes`.
+All in `infra/.env` — see [`infra/.env.example`](infra/.env.example) for the full list.
+Required in production: `DB_PASS`, `SITE_ADDRESS`. Email (`SMTP_*`) is optional —
+without it emails are logged instead of sent.
 
 ## Directory layout
 
 ```
-backend/
-  src/
-    db/           schema.sql, migrate.js, postgres.js pool
-    middleware/   requireAuth, errorHandler, rateLimit
-    routes/       one file per feature
-    services/     audit, discount, notification
-    sockets/      Socket.IO namespaces
-  server.js
-  scripts/        seed-admin.js, migrate-from-v1.js
-
-frontend/         Public-facing pages
-admin/            Admin SPA shell
-infra/            Docker Compose, Caddyfile, backup script
+backend/     Express API (server.js, src/{db,domain,routes,middleware,services,sockets}, scripts/)
+infra/       docker-compose.yml (+ .dev.yml, .prod.yml), Caddyfile, backup.sh, .env
+docs/        plans, parity checklist, v1 documentation and v1 source snapshot
+frontend/ admin/   v2's interim UI — replaced by v1's files in public/ (Phase 1)
 ```

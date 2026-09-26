@@ -79,17 +79,22 @@ docs/
 Docker Compose is the standard way to run and test everything (production runs the same
 stack on Louis's own server/PC with `infra/docker-compose.prod.yml`).
 
+Wrappers live in the root `package.json` (no `make` on the Windows machine).
+Compose projects: `ao-dev` (dev/test) and `ao-prod` (production) — they can run side by side.
+
 ```bash
-make dev        # docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up --build
-                #   site + API  → http://localhost:8080
-                #   Mailpit     → http://localhost:8025  (every outgoing email lands here)
-make test       # backend unit + integration tests inside the api container (real Postgres 16)
-make e2e        # Playwright visual + flow tests against the dev stack
-make reset-db   # drop the dev volume, re-migrate, re-seed fixtures
-make logs       # follow api logs
+npm run dev        # dev stack in the foreground (npm run dev:up = detached, dev:down = stop)
+                   #   site + API  → http://localhost:8080   (dev admin: admin / admin)
+                   #   Mailpit     → http://localhost:8025   (every outgoing email lands here)
+npm test           # backend unit + integration tests inside the api container (real Postgres 16)
+npm run e2e        # Playwright visual + flow tests against the dev stack
+npm run reset-db   # drop the dev volume, re-migrate, re-seed
+npm run logs       # follow dev api logs
+npm run prod:up    # build + start production (Caddy HTTPS, restart policies, backups)
 npx playwright test --update-snapshots   # ONLY when Louis asks to re-baseline v1 screenshots
 ```
 
+All settings/secrets live in `infra/.env` (template: `infra/.env.example`).
 Never point the dev stack at real SMTP credentials; emails go to Mailpit.
 
 ## Key design decisions (keep)
