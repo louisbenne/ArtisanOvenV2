@@ -272,8 +272,12 @@ async function lookup(req, res) {
 }
 
 // ── Admin: list all orders ────────────────────────────────────────────────────
+// Bug 7: payments and items used to be LEFT JOINed together and then summed, so
+// amount paid was multiplied by the item count. Each is now pre-aggregated per order.
+// Bug 8: the event filter (?eventId=, or /admin/orders/event/:id) was ignored.
 async function adminList(req, res) {
-  const { type, sessionId, search, limit = 100, offset = 0 } = req.query;
+  const { type, sessionId, eventId, search, limit = 100, offset = 0 } = req.query;
+  const like = '%' + (search || '').toLowerCase() + '%';
 
   const rows = await sql`
     SELECT
@@ -284,21 +288,21 @@ async function adminList(req, res) {
       c.name  AS customer_name,
       c.email AS customer_email,
       c.phone_e164,
-      COALESCE(SUM(p.amount_pence), 0)::INTEGER AS amount_paid_pence,
-      COUNT(i.id)::INTEGER AS item_count
+      COALESCE(p.paid, 0)::INTEGER  AS amount_paid_pence,
+      COALESCE(i.count, 0)::INTEGER AS item_count
     FROM   orders     o
     JOIN   customers  c ON c.id = o.customer_id
-    LEFT JOIN payments   p ON p.order_id  = o.id
-    LEFT JOIN order_items i ON i.order_id = o.id
+    LEFT JOIN LATERAL (SELECT SUM(amount_pence) AS paid FROM payments    WHERE order_id = o.id) p ON TRUE
+    LEFT JOIN LATERAL (SELECT COUNT(*)          AS count FROM order_items WHERE order_id = o.id) i ON TRUE
     WHERE  NOT o.is_deleted
-      AND  (${type       ?? null} IS NULL OR o.order_type = ${type       ?? ''})
-      AND  (${sessionId  ?? null} IS NULL OR o.session_id = ${parseInt(sessionId || '0', 10)})
-      AND  (${search     ?? null} IS NULL OR (
-             lower(c.name)  LIKE ${'%' + (search || '').toLowerCase() + '%'}
-          OR lower(c.email) LIKE ${'%' + (search || '').toLowerCase() + '%'}
-          OR lower(o.order_ref) LIKE ${'%' + (search || '').toLowerCase() + '%'}
+      AND  (${type ?? null}::text IS NULL OR o.order_type = ${type ?? ''})
+      AND  (${sessionId ? parseInt(sessionId, 10) : null}::int IS NULL OR o.session_id = ${parseInt(sessionId || '0', 10)})
+      AND  (${eventId ? parseInt(eventId, 10) : null}::int IS NULL OR o.event_id = ${parseInt(eventId || '0', 10)})
+      AND  (${search ?? null}::text IS NULL OR (
+             lower(c.name)  LIKE ${like}
+          OR lower(c.email) LIKE ${like}
+          OR lower(o.order_ref) LIKE ${like}
       ))
-    GROUP BY o.id, c.id
     ORDER BY o.created_at DESC
     LIMIT  ${parseInt(String(limit), 10)}
     OFFSET ${parseInt(String(offset), 10)}

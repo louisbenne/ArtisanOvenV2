@@ -30,7 +30,7 @@ changes a row.** Legend: ✅ works · ⚠️ partial/buggy · ❌ missing/broken
 | `adminGetSettings` (settings + live stats + last 20 log rows) | `GET /api/admin/dashboard` | ⚠️ spread over 3 routes, fields missing | P4 |
 | `adminUpdateSettings` (both forms) | `PATCH /api/admin/settings` + `PATCH /api/admin/sessions/current` | ⚠️ | P4 |
 | `adminStartNewSession` ("Start New Week") | `POST /api/admin/sessions` (archive, don't wipe; email summary + xlsx first) | ⚠️ no archive emails | P4 |
-| `adminGetOrders` / `adminGetParentOrders` | `GET /api/admin/orders?type=` | ⚠️ inflated totals (bug 7) | P0 |
+| `adminGetOrders` / `adminGetParentOrders` | `GET /api/admin/orders?type=` | ⚠️ backend ✅ (bug 7 fixed); v1 shape in P4 | P0 |
 | `adminUpdatePaidStatus` (checkbox) | `POST /api/admin/orders/:id/mark-paid` and `/mark-unpaid` (ledger entries) | ⚠️ ledger only, no one-tap toggle | P4 |
 | `adminUpdatePaymentMethod` | `PATCH /api/admin/orders/:id` | ✅ backend / ❌ UI | P5 |
 | `adminDeleteOrder` (soft) | `DELETE /api/admin/orders/:id` | ✅ backend / ❌ UI | P5 |
@@ -40,10 +40,10 @@ changes a row.** Legend: ✅ works · ⚠️ partial/buggy · ❌ missing/broken
 | `emailOrdersPdf` | `POST /api/admin/checklist/email` | ❌ | P6 |
 | `emailXlsxSnapshot` (after every change) | `GET /api/admin/exports/orders.xlsx` + debounced email | ❌ | P4, P6 |
 | `adminGetEvents` / `adminSaveEvent` / `adminDeleteEvent` / Active + Register-Interest toggles | `/api/admin/events…` | ✅ (missing fields) | P4 |
-| `adminGetEventOrders` (per-event filter) | `GET /api/admin/orders?type=event&event=` | ❌ filter ignored (bug 8) | P0 |
+| `adminGetEventOrders` (per-event filter) | `GET /api/admin/orders?type=event&event=` | ✅ backend (bug 8 fixed) / ❌ UI | P0 |
 | `adminGetRegisterInterest` | `GET /api/admin/events/interest` | ✅ | — |
 | `adminSetParentAccessCode` | `PUT /api/admin/settings/parent-access-code` | ⚠️ create only | P4 |
-| Discount codes (v1: sheet tab) | `/api/admin/settings/discounts…` | ⚠️ bug 6, 11 | P0, P4 |
+| Discount codes (v1: sheet tab) | `/api/admin/settings/discounts…` | ⚠️ bug 11 fixed; bug 6 goes with v1 UI | P0, P4 |
 | Kitchen board (tick, progress, allergy, detail modal, cutoff timer, filter/sort, xlsx offline upload) | `GET /api/admin/kitchen/board`, `PATCH /api/admin/kitchen/items/:id`, socket `/kitchen` | ⚠️ backend ✅, v1 UI not ported | P5 |
 | Audit log | `GET /api/admin/audit-log` | ✅ backend, page calls wrong URL | P0 |
 | **New in v2:** admin users/roles, payments ledger, money report, CSV export | existing routes | ✅ backend | P5 (UI in v1 style) |

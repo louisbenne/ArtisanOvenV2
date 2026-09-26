@@ -3,50 +3,59 @@
 const sql = require('../db');
 const { HttpError } = require('../middleware/errorHandler');
 const { logAudit }  = require('../services/auditService');
-const { incrementUsage } = require('../services/discountService');
+
+// payment_status is derived from the ledger: sum of payments (refunds negative).
+const statusFor = (paidPence, totalPence) =>
+  paidPence <= 0 ? 'unpaid' : paidPence >= totalPence ? 'paid' : 'partial';
 
 // ── Record a payment or refund ────────────────────────────────────────────────
 async function recordPayment(req, res) {
   // orderId = internal orders.id (admin routes never use display numbers — plan §4B)
   const { orderId: rawId, amountPence, method, reference, note } = req.body;
   if (!rawId || amountPence === undefined) throw new HttpError(400, 'orderId and amountPence required.');
-
-  const [order] = await sql`
-    SELECT id, total_pence, discount_code FROM orders
-    WHERE id = ${parseInt(rawId, 10) || 0} AND NOT is_deleted
-  `;
-  if (!order) throw new HttpError(404, 'Order not found.');
-
-  const orderId = order.id;
-
-  const [payment] = await sql`
-    INSERT INTO payments (order_id, amount_pence, method, reference, source, recorded_by, note)
-    VALUES (${orderId}, ${amountPence}, ${method ?? null}, ${reference ?? null}, 'admin', ${req.admin.id}, ${note ?? null})
-    RETURNING *
-  `;
-
-  // Recompute payment_status from ledger.
-  const [totals] = await sql`
-    SELECT COALESCE(SUM(amount_pence),0)::INTEGER AS paid FROM payments WHERE order_id = ${orderId}
-  `;
-  const paid   = parseInt(totals.paid, 10);
-  const status = paid <= 0 ? 'unpaid' : paid >= order.total_pence ? 'paid' : 'partial';
-
-  await sql`UPDATE orders SET payment_status = ${status}, updated_at = now() WHERE id = ${orderId}`;
-
-  // Increment discount usage when first marked paid.
-  if (status === 'paid' && order.discount_code) {
-    await incrementUsage(order.discount_code).catch(() => {});
+  if (!Number.isInteger(amountPence) || amountPence === 0) {
+    throw new HttpError(400, 'amountPence must be a non-zero whole number of pence.');
   }
+
+  const { payment, status, orderId } = await sql.begin(async tx => {
+    // Lock the order so two payments recorded at once can't both see "not yet paid".
+    const [order] = await tx`
+      SELECT id, total_pence, discount_code, payment_status FROM orders
+      WHERE id = ${parseInt(rawId, 10) || 0} AND NOT is_deleted
+      FOR UPDATE
+    `;
+    if (!order) throw new HttpError(404, 'Order not found.');
+
+    const [payment] = await tx`
+      INSERT INTO payments (order_id, amount_pence, method, reference, source, recorded_by, note)
+      VALUES (${order.id}, ${amountPence}, ${method ?? null}, ${reference ?? null}, 'admin', ${req.admin.id}, ${note ?? null})
+      RETURNING *
+    `;
+    const [{ paid }] = await tx`
+      SELECT COALESCE(SUM(amount_pence), 0)::INTEGER AS paid FROM payments WHERE order_id = ${order.id}
+    `;
+    const status = statusFor(paid, order.total_pence);
+    await tx`UPDATE orders SET payment_status = ${status}, updated_at = now() WHERE id = ${order.id}`;
+
+    // Bug 11: count a discount use only on the TRANSITION to paid (v1: "newly
+    // marked Paid"), not on every payment recorded against an already-paid order.
+    if (status === 'paid' && order.payment_status !== 'paid' && order.discount_code) {
+      await tx`UPDATE discount_codes SET times_used = times_used + 1 WHERE code = ${order.discount_code}`;
+    }
+    return { payment, status, orderId: order.id };
+  });
 
   await logAudit({ adminUserId: req.admin.id, action: 'record_payment',
                    targetTable: 'payments', targetId: String(payment.id),
-                   details: { orderId: orderCode, amountPence, method } });
+                   details: { orderId, amountPence, method } });
 
   res.status(201).json({ success: true, payment, paymentStatus: status });
 }
 
 // ── Money dashboard summary ────────────────────────────────────────────────────
+// Bug 7: orders were LEFT JOINed to payments and then SUMmed, so every order
+// total was multiplied by its number of payments. Each aggregate now runs over
+// one row per order (payments pre-summed in a CTE).
 async function summary(req, res) {
   const { sessionId } = req.query;
 
@@ -55,19 +64,28 @@ async function summary(req, res) {
     : sql`AND s.archived_at IS NULL`;
 
   const [totals] = await sql`
+    WITH scoped AS (
+      SELECT o.id, o.total_pence, o.discount_pence, o.payment_status
+      FROM   orders o
+      LEFT JOIN ordering_sessions s ON s.id = o.session_id
+      WHERE  NOT o.is_deleted ${sessionFilter}
+    ), pay AS (
+      SELECT p.order_id,
+             SUM(CASE WHEN p.amount_pence > 0 THEN p.amount_pence ELSE 0 END)  AS collected,
+             SUM(CASE WHEN p.amount_pence < 0 THEN -p.amount_pence ELSE 0 END) AS refunded
+      FROM   payments p JOIN scoped ON scoped.id = p.order_id
+      GROUP  BY p.order_id
+    )
     SELECT
-      COUNT(DISTINCT o.id)::INTEGER                          AS order_count,
-      COALESCE(SUM(o.total_pence), 0)::INTEGER               AS gross_pence,
-      COALESCE(SUM(o.discount_pence), 0)::INTEGER            AS discounts_pence,
-      COALESCE(SUM(CASE WHEN p.amount_pence > 0 THEN p.amount_pence END), 0)::INTEGER AS collected_pence,
-      COUNT(DISTINCT CASE WHEN o.payment_status = 'unpaid'  THEN o.id END)::INTEGER AS unpaid_count,
-      COUNT(DISTINCT CASE WHEN o.payment_status = 'partial' THEN o.id END)::INTEGER AS partial_count,
-      COUNT(DISTINCT CASE WHEN o.payment_status = 'paid'    THEN o.id END)::INTEGER AS paid_count
-    FROM   orders    o
-    LEFT JOIN ordering_sessions s ON s.id = o.session_id
-    LEFT JOIN payments          p ON p.order_id = o.id
-    WHERE  NOT o.is_deleted
-      ${sessionFilter}
+      COUNT(*)::INTEGER                                          AS order_count,
+      COALESCE(SUM(scoped.total_pence), 0)::INTEGER              AS gross_pence,
+      COALESCE(SUM(scoped.discount_pence), 0)::INTEGER           AS discounts_pence,
+      COALESCE(SUM(pay.collected), 0)::INTEGER                   AS collected_pence,
+      COALESCE(SUM(pay.refunded), 0)::INTEGER                    AS refunded_pence,
+      COUNT(*) FILTER (WHERE scoped.payment_status = 'unpaid')::INTEGER  AS unpaid_count,
+      COUNT(*) FILTER (WHERE scoped.payment_status = 'partial')::INTEGER AS partial_count,
+      COUNT(*) FILTER (WHERE scoped.payment_status = 'paid')::INTEGER    AS paid_count
+    FROM scoped LEFT JOIN pay ON pay.order_id = scoped.id
   `;
 
   const byMethod = await sql`
