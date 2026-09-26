@@ -1,5 +1,6 @@
--- Artisan Oven v2 — PostgreSQL schema
--- Run once against a fresh database, or replay migrations in order.
+-- 001 — initial schema (the v2 foundation).
+-- Idempotent on purpose: databases created before the migrations system existed
+-- already have these tables, and 001 is recorded as applied on their first run.
 
 -- ─── Customers ────────────────────────────────────────────────────────────────
 -- Replaces v1's repeated free-text name/email per row with a real entity.
