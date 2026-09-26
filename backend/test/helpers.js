@@ -8,6 +8,7 @@
 process.env.DB_NAME   = process.env.TEST_DB_NAME || 'artisanoven_test';
 process.env.SMTP_HOST = '';          // emails are logged, never sent
 process.env.NODE_ENV  = 'test';
+process.env.RATE_LIMIT = 'off';     // rate-limit.test.js turns it back on
 
 const postgres = require('postgres');
 

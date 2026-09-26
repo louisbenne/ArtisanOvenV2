@@ -10,6 +10,7 @@ const common = {
   connect_timeout: 10,
   ssl:             process.env.DB_SSL === 'true' ? 'require' : false,
   onnotice:        () => {},
+  transform:       { undefined: null },   // optional request fields → NULL, not a 500
 };
 
 const sql = process.env.DATABASE_URL

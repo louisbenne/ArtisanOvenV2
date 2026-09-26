@@ -13,6 +13,11 @@ const { errorHandler } = require('./src/middleware/errorHandler');
 const { initSockets }  = require('./src/sockets');
 
 const app    = express();
+
+// Behind Caddy (and possibly a tunnel) on private networks: trust those hops so
+// req.ip is the real visitor from X-Forwarded-For (rate limiting depends on it).
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
+
 const server = http.createServer(app);
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────

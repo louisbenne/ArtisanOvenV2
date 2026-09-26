@@ -23,8 +23,9 @@ services:
       # Seeded on first start (dev only).
       ADMIN_USERNAME: ${DEV_ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-admin}
-    command: ["sh", "-c", "node src/db/migrate.js && node scripts/seed-admin.js && exec node --watch server.js"]
-    # Live source (no rebuild needed). node_modules stays the image's Linux build.
+    command: ["sh", "-c", "node src/db/migrate.js && node scripts/seed-admin.js && exec node server.js"]
+    # Live source: `npm run dev:restart` picks up edits (no rebuild; file watching
+    # does not work on Windows bind mounts). node_modules stays the image's Linux build.
     volumes:
       - ../backend:/app/backend
       - /app/backend/node_modules

@@ -25,6 +25,9 @@ needed. Update the status column as branches land.
 | C10 | Windows `core.autocrlf=true` would silently rewrite v1 files to CRLF. | `.gitattributes` marks `public/**` and `docs/v1-reference*/**` as `-text` (byte-exact). |
 | C11 | Tailscale Funnel only serves `*.ts.net` names — it cannot serve `artisanoven.shop`. | Funnel = staging URL. Production domain needs Cloudflare Tunnel or port-forward (decision H1). |
 | C12 | `supertest` would be a new dependency. | Not needed: tests use Node 20's built-in `fetch` against the real server on a random port. |
+| C13 | **Bug 14 (new):** one rate-limit bucket per IP shared by every limiter, and no `trust proxy` — behind Caddy the *whole site* shared ~10 orders/min. | Fixed in B5: per-limiter buckets, `trust proxy` for private hops. |
+| C14 | **Bug 15 (new, hidden behind bug 2):** any omitted optional field (e.g. `termsAcceptedAt`) was `undefined`, which postgres.js rejects → 500. | Fixed in B5: `transform: { undefined: null }` in the DB client. |
+| C15 | `node --watch` gets no file events from a Windows folder bind-mounted into Docker. | Dev uses `npm run dev:restart` instead. |
 
 ## 2. Branch / PR workflow
 
@@ -50,7 +53,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | B2 | `phase-0-docker-stack` | base/dev/prod compose, `api` rename, Mailpit, npm wrappers, drop Railway, `DB_SSL` opt-in, one `infra/.env`, README | ✅ |
 | B3 | `phase-0-test-harness` | `node --test`, fresh DB per run, CI (GitHub Actions + postgres:16), bug 0/1 regression tests | ✅ |
 | B4 | `phase-0-migrations` | `migrations/NNN_*.sql` + `schema_migrations`, baseline existing DBs (task 2) | ✅ |
-| B5 | `phase-0-lunch-transaction` | Bug 2 + concurrency test (task 3) | ⬜ |
+| B5 | `phase-0-lunch-transaction` | Bug 2 + concurrency test (task 3) | ✅ |
 | B6 | `phase-0-order-numbers` | §4B: lunch `#N` per session, shared `E` counter (task 10) | ⬜ |
 | B7 | `phase-0-parent-security` | Bugs 3, 4, 5: `parent_sessions`, `requireParent`, discount `scope` (task 4) | ⬜ |
 | B8 | `phase-0-aggregates` | Bugs 7, 8, 11 (task 5) | ⬜ |

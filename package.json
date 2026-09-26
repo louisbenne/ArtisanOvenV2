@@ -5,6 +5,7 @@
   "scripts": {
     "dev":         "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up --build",
     "dev:up":      "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up --build -d",
+    "dev:restart": "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml restart api",
     "dev:down":    "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml down",
     "reset-db":    "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml down -v && npm run dev:up",
     "test":        "docker compose -p ao-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml run --rm -T api npm test",

@@ -83,7 +83,7 @@ Wrappers live in the root `package.json` (no `make` on the Windows machine).
 Compose projects: `ao-dev` (dev/test) and `ao-prod` (production) — they can run side by side.
 
 ```bash
-npm run dev        # dev stack in the foreground (npm run dev:up = detached, dev:down = stop)
+npm run dev        # dev stack in the foreground (dev:up = detached, dev:restart = reload code, dev:down = stop)
                    #   site + API  → http://localhost:8080   (dev admin: admin / admin)
                    #   Mailpit     → http://localhost:8025   (every outgoing email lands here)
 npm test           # backend unit + integration tests inside the api container (real Postgres 16)

@@ -62,24 +62,30 @@ async function create(req, res) {
     // 1. Find current session (lunch orders only).
     let sessionId = null;
     if (orderType === 'lunch') {
+      // Lock the session row first: concurrent orders queue here, so the
+      // capacity sum below can't be stale. (Postgres forbids FOR UPDATE with GROUP BY.)
       const [session] = await sql`
-        SELECT s.id, s.max_pizzas, s.ordering_open, s.auto_close_at,
-               COALESCE(SUM(
-                 CASE i.size
-                   WHEN '12inch'       THEN 1.0
-                   WHEN 'Half12inch'   THEN 0.5
-                   WHEN 'Quarter12inch' THEN 0.25
-                 END
-               ), 0)::NUMERIC(6,2) AS current_pizzas
-        FROM   ordering_sessions s
-        LEFT JOIN orders     o ON o.session_id = s.id AND NOT o.is_deleted
-        LEFT JOIN order_items i ON i.order_id = o.id
-        WHERE  s.archived_at IS NULL
-        GROUP  BY s.id
+        SELECT id, max_pizzas, ordering_open, auto_close_at
+        FROM   ordering_sessions
+        WHERE  archived_at IS NULL
+        ORDER  BY id DESC
         LIMIT  1
         FOR UPDATE
       `;
       if (!session) throw new HttpError(503, 'No active ordering session.');
+      const [{ current_pizzas }] = await sql`
+        SELECT COALESCE(SUM(
+                 CASE i.size
+                   WHEN '12inch'        THEN 1.0
+                   WHEN 'Half12inch'    THEN 0.5
+                   WHEN 'Quarter12inch' THEN 0.25
+                 END
+               ), 0)::NUMERIC(6,2) AS current_pizzas
+        FROM   orders o
+        JOIN   order_items i ON i.order_id = o.id
+        WHERE  o.session_id = ${session.id} AND NOT o.is_deleted
+      `;
+      session.current_pizzas = current_pizzas;
       if (!session.ordering_open) throw new HttpError(409, 'Ordering is currently closed.');
       if (session.auto_close_at && new Date() > new Date(session.auto_close_at)) {
         throw new HttpError(409, 'Ordering deadline has passed.');
