@@ -8,7 +8,7 @@ changes a row.** Legend: ✅ works · ⚠️ partial/buggy · ❌ missing/broken
 | v1 action / feature | v2 endpoint (target) | Now | Fix in |
 |---|---|---|---|
 | `getStatus` (tracker, pills, messages) | `GET /api/status` → v1-shaped object | ✅ (+ soldOut, ordersTeamEmail) | P4 |
-| Google Form lunch order | `POST /api/orders` `{type:'lunch'}` | ⚠️ backend works (bug 2 fixed); native form in P3 | P0, P3 |
+| Google Form lunch order | Own order form on order.html → `POST /api/orders` | ✅ no Google; same questions, v1 styling | P0, P3 |
 | `getOrder` (email / order # / token) | `GET /api/orders/lookup?q=&token=` | ✅ via api.js (v1 shape; v1 `?order=N&token=` links work) | P2 |
 | `getEvents` / `getEvent` | `GET /api/events`, `GET /api/events/:slug` | ✅ v1 shape, slug IDs | P4 |
 | `registerInterest` | `POST /api/events/:slug/interest` | ✅ via api.js | P2 |
@@ -16,7 +16,7 @@ changes a row.** Legend: ✅ works · ⚠️ partial/buggy · ❌ missing/broken
 | `parentAuth` | `POST /api/parent/auth` → parent session | ✅ (bug 3 fixed) | P0 |
 | `createParentOrder` | `POST /api/parent/orders` (parent session required) | ⚠️ secured + works (bugs 4, 5); multi-child in P4 | P0, P4 |
 | `getVersion` | `GET /api/version` | ❌ | P4 |
-| Discount code on lunch form | `POST /api/discounts/check` | ❌ (page calls missing route) | P4 |
+| Discount code on lunch form | `POST /api/discounts/check` | ✅ live check, public codes only | P4 |
 | **Sold-out mode:** home page automatically becomes the fully-booked page (§4A) | `/` serves `fully-booked.html` while sold out; `/order.html` redirects to `/` | ❌ (v1 did this by hand on 23 Sept) | P1, P2, P4 |
 | **Order numbers like v1** (§4B): lunch `#N` restarting weekly, shared `E101` counter for events + parents | `domain/orderNumbers.js` | ✅ | P0 |
 

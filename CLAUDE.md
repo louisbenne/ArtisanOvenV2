@@ -5,18 +5,21 @@ Read this file fully at the start of every session. The full build plan is in
 
 ## Mission (one sentence)
 
-V2 must **look exactly like v1 and do exactly what v1 does**, but run on a new
-backend (Node + Express + PostgreSQL) instead of Google Forms / Sheets / Apps Script.
+V2 offers **everything v1 offered**, with **v1's public pages, look and design rules**,
+but runs entirely on **our own system** (Node + Express + PostgreSQL). **Nothing uses
+Google** — no Google Forms, Sheets or Apps Script, not even as a stopgap (Louis,
+26 Sept 2026). The staff tools (admin, kitchen) are **redesigned for much better
+UX** in v1's design language — they are not copies of v1's admin.html.
 
 ## Golden rules
 
-1. **The frontend is frozen.** Everything under `public/` is a verbatim copy of v1.
-   Do not change markup, class names, CSS, copy text, images or fonts unless the
-   task explicitly names the file and the change. Allowed edits: replacing a
-   `fetch(...)` call site with a call into `public/js/api.js`, adding the
-   `api.watchSoldOut()` script line to `index.html` / `fully-booked.html`, and the
-   two sanctioned UI changes (native lunch order form and new admin cards for
-   v2-only features). The admin login stays v1's password-only screen (Louis, D8).
+1. **Public pages keep v1's look and wording.** Public pages in `public/` start as
+   copies of v1's files (originals stay untouched in `docs/v1-reference/`). Edit them
+   only where v2's own system replaces something v1 got from Google or Apps Script
+   (network calls → `public/js/api.js`; the Google Form → our native order form),
+   plus `api.watchSoldOut()`. Every edit is listed in `tools/v1-parity-allowlist.json`.
+   **Staff tools** (admin + kitchen) are new pages built with v1's CSS variables,
+   fonts and components; admin login is a single password, no username (Louis, D8).
 2. **All network calls from the browser go through `public/js/api.js`.** No page
    may call `fetch` against the backend directly. `api.js` returns objects in the
    exact shape the v1 page code already expects, so page logic stays untouched.

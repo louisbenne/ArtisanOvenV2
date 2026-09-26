@@ -82,7 +82,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 |---|---|---|---|
 | E1 | `phase-2-api-js` | `public/js/api.js` (v1-shaped), rewire fetch call sites only, legacy `Payment.html?order=&token=` links | ✅ |
 | E2 | `phase-2-sold-out` | §4A sold-out mode + 5 tests | ⬜ |
-| E3 | `phase-3-order-form` | Native lunch form from v1 classes (replaces Google Form iframe) | ⬜ |
+| E3 | `phase-3-order-form` | Native lunch form from v1 classes (replaces Google Form iframe) | ✅ |
 
 ### Stage F — Remaining parity, admin, kitchen, emails
 | # | Branch | Scope | Status |
@@ -91,8 +91,8 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | F2 | `phase-4-payments-dashboard` | mark-paid/unpaid ledger, dashboard endpoint | ⬜ |
 | F3 | `phase-4-new-week` | Start New Week (archive + summary email) | ⬜ |
 | F4 | `phase-4-exports` | xlsx (v1 layout), checklist HTML, pickup IDs | ⬜ |
-| F5 | `phase-5-admin` | v1 `admin.html` wired to REST (password-only login as v1, v2-only cards) | ⬜ |
-| F6 | `phase-5-kitchen` | v1 kitchen board, server ticks + socket sync | ⬜ |
+| F5 | `phase-5-admin` | NEW admin designed for much better UX in v1's design language (not a copy of v1 admin.html); every v1 admin feature; password-only login | ⬜ |
+| F6 | `phase-5-kitchen` | NEW kitchen board in v1's design language, every v1 kitchen feature, server ticks + live sync | ⬜ |
 | F7 | `phase-6-emails` | Every v1 email template, provider from env | ⬜ |
 
 ### Stage G — Data, hardening, go-live
@@ -105,7 +105,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 
 ## 4. Path to production
 
-0. **26 Sept:** staging (Funnel URL) runs v1's public pages on the v2 backend (`phase-2-staging-admin`); interim admin at `/v2-admin/`.
+0. **26 Sept (Louis):** nothing uses Google — our own order form replaces the Google Form (E3); the admin and kitchen are redesigned for better UX in v1's design language (F5/F6), not copied. Staging runs v1's public pages on v2; interim admin at `/v2-admin/` until F5.
 1. **Now → end of Stage B:** live stack on this PC keeps running at the Funnel URL
    (staging). Every restart is safe from A0 onward.
 2. **Stage C–E:** staging URL shows v1's exact public pages running on v2. Team can

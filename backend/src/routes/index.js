@@ -11,6 +11,7 @@ const { requireParent } = require('../middleware/requireParent');
 const auth      = require('./auth');
 const sessions  = require('./sessions');
 const status    = require('./status');
+const discounts = require('./discounts');
 const orders    = require('./orders');
 const events    = require('./events');
 const kitchen   = require('./kitchen');
@@ -23,6 +24,7 @@ const router = Router();
 
 // ── Public ────────────────────────────────────────────────────────────────────
 router.get( '/status',                 status.get);
+router.post('/discounts/check',        rateLimit({ max: 30 }), discounts.check);
 router.get( '/sessions/current',       sessions.getCurrent);
 router.get( '/orders/lookup',          orders.lookup);
 router.get( '/events',                 events.list);

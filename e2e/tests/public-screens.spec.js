@@ -57,6 +57,9 @@ test('fully booked page', async ({ page }) => {
 });
 
 test.describe('order page', () => {
+  // v2 replaces v1's Google Form with its own form (sanctioned change) — no pixel
+  // comparison with v1 here; tests/order-form.spec.js covers the v2 page.
+  test.skip(TARGET === 'v2', 'order page intentionally differs from v1 (own order form)');
   test('open', async ({ page }) => { await open(page, '/order.html'); await shot(page, 'order-open'); });
   test('closed', async ({ page }) => {
     await open(page, '/order.html', { scenario: 'closedDeadline' }); await shot(page, 'order-closed');

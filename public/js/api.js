@@ -202,7 +202,32 @@
     });
   }
 
-  window.AO_API = { fetch: v1fetch, actions: actions, endpoint: V1_ENDPOINT };
+  // ── v2's own order form (order.html) — replaces v1's Google Form ─────────
+  // order: { allergyNotes, items: [{size, childName, childClass}], paymentMethod
+  //          ('Bank Transfer'|'PayPal'|'Cash'), payerName, payerEmail, discountCode,
+  //          termsAccepted, submissionId }
+  function createLunchOrder(order) {
+    return rest('POST', '/api/orders', {
+      orderType: 'lunch',
+      allergyFlag: Boolean(order.allergyNotes),
+      allergyNotes: order.allergyNotes || undefined,
+      items: order.items,
+      paymentMethod: toV2Method(order.paymentMethod),
+      payerName: order.payerName,
+      payerEmail: order.payerEmail,
+      discountCode: order.discountCode || undefined,
+      termsAccepted: order.termsAccepted === true,
+      submissionId: order.submissionId,
+    });
+  }
+
+  // → { valid, code, subtotalPence, discountPence, totalPence } or { valid: false, message }
+  function checkDiscount(code, items) {
+    return rest('POST', '/api/discounts/check', { code: code, items: items || [] });
+  }
+
+  window.AO_API = { fetch: v1fetch, actions: actions, endpoint: V1_ENDPOINT,
+                    createLunchOrder: createLunchOrder, checkDiscount: checkDiscount };
   window.ORDER_API_URL = V1_ENDPOINT;
   window.STATUS_API_URL = '/api/status';
 })();

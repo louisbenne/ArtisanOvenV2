@@ -77,15 +77,20 @@ async function createSession(sql, { maxPizzas = 20, open = true } = {}) {
   return s;
 }
 
+// A valid lunch order (as the order form sends it). Items passed in overrides
+// get a default child name/class so tests only state what they care about.
 function lunchOrder(overrides = {}) {
-  return {
+  const order = {
     orderType:     'lunch',
     payerName:     'Test Parent',
     payerEmail:    'parent@example.com',
     paymentMethod: 'cash',
-    items:         [{ size: '12inch', childName: 'Alex', className: '5A' }],
+    termsAccepted: true,
+    items:         [{ size: '12inch' }],
     ...overrides,
   };
+  order.items = order.items.map(i => ({ childName: 'Alex', childClass: 'Class 5', ...i }));
+  return order;
 }
 
 let eventSeq = 0;

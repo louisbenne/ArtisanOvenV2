@@ -27,7 +27,6 @@ async function create(req, res) {
     paymentMethod,
     notes,
     submissionId,
-    termsAcceptedAt,
   } = req.body;
 
   const isParent     = Boolean(req.parent);
@@ -57,6 +56,20 @@ async function create(req, res) {
     for (let i = 0; i < qty; i++) items.push(item);
   }
   if (!items.length) throw new HttpError(400, 'Please include at least one pizza item.');
+
+  // Lunch orders: the same rules v1's order form had.
+  let termsAcceptedAt = req.body.termsAcceptedAt;
+  if (orderType === 'lunch') {
+    if (items.length > 5) throw new HttpError(400, 'You can order up to 5 pizzas in one order.');
+    if (items.some(i => !String(i.childName || '').trim() || !String(i.childClass || '').trim())) {
+      throw new HttpError(400, 'Please give the name and class for each pizza.');
+    }
+    if (!paymentMethod) throw new HttpError(400, 'Please choose a payment method.');
+    if (req.body.termsAccepted !== true && !termsAcceptedAt) {
+      throw new HttpError(400, 'Please accept the Terms & Conditions to place your order.');
+    }
+    termsAcceptedAt = termsAcceptedAt || new Date();
+  }
 
   // Event orders name their event by slug (v1 Event ID) or internal id.
   let eventId = null;

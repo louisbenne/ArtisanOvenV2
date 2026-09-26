@@ -13,10 +13,6 @@
 
   <!-- Resource Hints for faster loading -->
   <link rel="preload" href="/api/status" as="fetch" crossorigin="anonymous" />
-  <link rel="preconnect" href="https://docs.google.com" crossorigin />
-  <link rel="preconnect" href="https://script.google.com" crossorigin />
-  <link rel="dns-prefetch" href="https://docs.google.com" />
-  <link rel="dns-prefetch" href="https://script.google.com" />
   <link rel="preload" href="fonts/BaarSophia.ttf" as="font" type="font/ttf" crossorigin />
 
   <link rel="stylesheet" href="style.css" />
@@ -24,6 +20,130 @@
   <style>
     .order-events-banner {
       display: none;
+    }
+    /* v2 lunch order form — the same components as v1's event-order.html */
+    .event-form-card {
+      background: var(--paper-raised);
+      border: 1px solid rgba(31, 58, 46, 0.12);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 16px rgba(31, 58, 46, 0.04);
+      text-align: left;
+    }
+    .form-section-title {
+      font-family: "Baar Sophia", serif;
+      font-size: 1.3rem;
+      color: var(--forest);
+      margin: 0 0 14px 0;
+    }
+    .form-label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--forest);
+    }
+    .form-field {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(31,58,46,0.2);
+      border-radius: 8px;
+      font: inherit;
+      background: #fff;
+    }
+    .pizza-item-row {
+      display: grid;
+      grid-template-columns: 1.6fr 1.4fr 1fr auto auto;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed rgba(31,58,46,0.1);
+    }
+    .pizza-item-row .row-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--text-secondary);
+    }
+    .pizza-row-label {
+      grid-column: 1 / -1;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--terracotta);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .pizza-row-subtotal { padding: 12px 0; font-weight: 700; color: var(--forest); }
+    .remove-pizza-btn {
+      background: transparent;
+      border: 1px solid var(--terracotta);
+      color: var(--terracotta);
+      width: 40px;
+      height: 44px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    .remove-pizza-btn:hover:not(:disabled) { background: var(--terracotta); color: white; }
+    .add-pizza-btn {
+      background: transparent;
+      border: 1px dashed var(--basil);
+      color: var(--basil);
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      margin-bottom: 24px;
+    }
+    .add-pizza-btn:hover { background: rgba(111, 143, 114, 0.08); }
+    .pizza-summary-box {
+      background: rgba(31, 58, 46, 0.04);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 8px 0 24px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--forest);
+    }
+    .pizza-summary-box > div { display: flex; justify-content: space-between; align-items: center; }
+    .choice-radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
+    .choice-radio {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: 1px solid rgba(31,58,46,0.2);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--forest);
+    }
+    .choice-radio input { accent-color: var(--forest); }
+    .terms-check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; color: var(--forest); }
+    .terms-check input { margin-top: 4px; accent-color: var(--forest); width: 18px; height: 18px; }
+    .success-card { text-align: center; padding: 40px 20px; }
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(111, 143, 114, 0.15);
+      color: var(--basil);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) {
+      .event-form-card { padding: 22px 18px; }
+      .pizza-item-row { grid-template-columns: 1fr 1fr; }
+      .pizza-item-row > .size-cell { grid-column: 1 / -1; }
     }
     @media (max-width: 600px) {
       .page-intro h1 { font-size: 1.8rem; }
@@ -161,21 +281,138 @@
           })();
         </script>
 
-        <div class="form-wrapper is-form-loading" id="order-form-container">
-          <div class="form-loader">
-            <div class="spinner"></div>
-            <p>Loading Secure Order Form...</p>
-          </div>
-          <iframe title="Artisan Oven Order Form" src="https://docs.google.com/forms/d/e/1FAIpQLSdvi-I8Whsc0LR3qwic_w69_MDI1Hy6k9Q3YBvX9Rqt2IrQAA/viewform?embedded=true" style="width: 100%; min-height: 1400px; border: none;" frameborder="0" marginheight="0" marginwidth="0" onload="this.parentElement.classList.remove('is-form-loading')">Loading…</iframe>
+        <!-- v2: Artisan Oven's own order form (replaces v1's embedded Google Form).
+             Same questions in the same order; handled by js/order-form.js. -->
+        <div id="order-form-container">
+          <form id="lunch-order-form" class="event-form-card" novalidate>
+            <h2 class="form-section-title" style="font-size: 1.5rem;">Order your Tuesday lunchtime margarita pizza here</h2>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0 0 24px 0;">All pizzas are handcrafted wood-fired Margherita pizzas. Fields marked * are required.</p>
+
+            <div style="margin-bottom: 24px;">
+              <span class="form-label">Any allergies or special remarks? *</span>
+              <div class="choice-radio-group" role="radiogroup">
+                <label class="choice-radio"><input type="radio" name="lunch-allergy" value="No" /> No</label>
+                <label class="choice-radio"><input type="radio" name="lunch-allergy" value="Yes" /> Yes</label>
+              </div>
+              <div id="lunch-allergy-details" style="display: none; margin-top: 12px;">
+                <label class="form-label" for="lunch-allergy-notes">Allergies or special remarks *</label>
+                <textarea id="lunch-allergy-notes" class="form-field" style="min-height: 80px;" placeholder="e.g. nut allergy"></textarea>
+              </div>
+            </div>
+
+            <h3 class="form-section-title">Your Pizzas</h3>
+            <div id="lunch-pizza-rows">
+              <div class="pizza-item-row">
+                <span class="pizza-row-label">Pizza 1</span>
+                <div class="size-cell">
+                  <label class="row-label">Pizza size *</label>
+                  <select class="pizza-size-select form-field">
+                    <option value="12inch" selected>Whole 12-inch pizza — £8</option>
+                    <option value="Half12inch">Half a 12-inch pizza — £5</option>
+                    <option value="Quarter12inch">Quarter of a 12-inch pizza — £3</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="row-label">Name of person eating this pizza *</label>
+                  <input type="text" class="child-name-input form-field" placeholder="e.g. Oscar" />
+                </div>
+                <div>
+                  <label class="row-label">Class *</label>
+                  <input type="text" class="child-class-input form-field" placeholder="e.g. Class 5" />
+                </div>
+                <div class="pizza-row-subtotal">£8.00</div>
+                <button type="button" class="remove-pizza-btn" title="Remove pizza" aria-label="Remove pizza">&times;</button>
+              </div>
+            </div>
+            <template id="lunch-pizza-row-template">
+              <div class="pizza-item-row">
+                <span class="pizza-row-label">Pizza</span>
+                <div class="size-cell">
+                  <label class="row-label">Pizza size *</label>
+                  <select class="pizza-size-select form-field">
+                    <option value="12inch" selected>Whole 12-inch pizza — £8</option>
+                    <option value="Half12inch">Half a 12-inch pizza — £5</option>
+                    <option value="Quarter12inch">Quarter of a 12-inch pizza — £3</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="row-label">Name of person eating this pizza *</label>
+                  <input type="text" class="child-name-input form-field" placeholder="e.g. Oscar" />
+                </div>
+                <div>
+                  <label class="row-label">Class *</label>
+                  <input type="text" class="child-class-input form-field" placeholder="e.g. Class 5" />
+                </div>
+                <div class="pizza-row-subtotal">£8.00</div>
+                <button type="button" class="remove-pizza-btn" title="Remove pizza" aria-label="Remove pizza">&times;</button>
+              </div>
+            </template>
+            <button type="button" id="lunch-add-pizza" class="add-pizza-btn">+ Add Another Pizza (up to 5)</button>
+
+            <h3 class="form-section-title">Payment &amp; Contact</h3>
+            <div style="margin-bottom: 16px;">
+              <label class="form-label" for="lunch-payment-method">Payment Method *</label>
+              <select id="lunch-payment-method" class="form-field">
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Cash">Cash (via child at lunchtime pickup)</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label class="form-label" for="lunch-payer-name">What is your name / payer's name? *</label>
+              <input type="text" id="lunch-payer-name" class="form-field" autocomplete="name" placeholder="e.g. Sarah Jenkins" />
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label class="form-label" for="lunch-payer-email">Email address (for your confirmation &amp; payment details) *</label>
+              <input type="email" id="lunch-payer-email" class="form-field" autocomplete="email" placeholder="e.g. sarah@example.com" />
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label class="form-label" for="lunch-discount-code">Staff / sibling discount code (optional)</label>
+              <input type="text" id="lunch-discount-code" class="form-field" autocomplete="off" style="text-transform: uppercase;" />
+              <div id="lunch-discount-feedback" style="display: none; margin-top: 6px; font-size: 0.88rem; font-weight: 600;"></div>
+            </div>
+
+            <div class="pizza-summary-box">
+              <div id="lunch-discount-line" style="display: none; font-size: 0.95rem; font-weight: 600; margin-bottom: 8px;">
+                <span>Discount</span><span id="lunch-discount-amount">−£0.00</span>
+              </div>
+              <div><span>Total to Pay</span><span id="lunch-total">£8.00</span></div>
+            </div>
+
+            <label class="terms-check" style="margin-bottom: 20px;">
+              <input type="checkbox" id="lunch-terms" />
+              <span>I have read and accept the <a href="terms.html" target="_blank" style="color: var(--terracotta); font-weight: 700;">Terms &amp; Conditions</a> *</span>
+            </label>
+
+            <div id="lunch-order-error" role="alert" style="background: rgba(198,93,59,0.1); color: var(--terracotta); padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; display: none;"></div>
+
+            <button type="submit" id="lunch-submit" class="choice-btn" style="width: 100%; padding: 16px; font-size: 1rem; border: none; cursor: pointer;">PLACE ORDER</button>
+          </form>
         </div>
 
-        <!-- Return Home Section -->
-        <div class="return-home">
-          <h2>Order submitted?</h2>
-          <p>Thank you! Once you've submitted your order, use the button below to return to the Artisan Oven homepage.</p>
-          <a href="index.html" class="back-home-button">
-            &larr; BACK TO ARTISAN OVEN
-          </a>
+        <!-- Order confirmation (styled like v1's event-order success panel) -->
+        <div id="lunch-success-container" style="display: none;">
+          <div class="event-form-card success-card">
+            <div class="success-icon">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <h2 style="font-family: 'Baar Sophia', serif; font-size: 2rem; color: var(--forest); margin-bottom: 12px;">Order Successfully Placed!</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 1.05rem;">Thank you! We've emailed your confirmation with payment details.</p>
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;">
+              <div style="background: rgba(31,58,46,0.04); padding: 20px; border-radius: 12px; min-width: 150px;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Order Number</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: var(--forest); font-family: 'IBM Plex Mono', monospace;" id="lunch-success-order-id">#--</div>
+              </div>
+              <div style="background: rgba(31,58,46,0.04); padding: 20px; border-radius: 12px; min-width: 150px;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Total to Pay</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: var(--forest); font-family: 'IBM Plex Mono', monospace;" id="lunch-success-total">£--</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+              <a href="Payment.html" id="lunch-success-payment-link" class="choice-btn" style="padding: 14px 28px; text-decoration: none;">PROCEED TO PAYMENT &rarr;</a>
+              <a href="index.html" class="back-home-button" style="padding: 14px 28px;">&larr; BACK TO ARTISAN OVEN</a>
+            </div>
+          </div>
         </div>
 
         <!-- Fully Booked / Closed Message -->
@@ -206,6 +443,7 @@
     </div>
   </footer>
 
+  <script src="js/order-form.js" defer></script>
   <script src="script.js" defer></script>
   <a href="https://chat.whatsapp.com/H6UKHyWuVHnCJWNu7f83ZO" class="whatsapp-float" target="_blank" rel="noopener noreferrer">
     <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12.031 0C5.389 0 0 5.39 0 12.031c0 2.124.551 4.195 1.6 6.01L.226 23.511l5.602-1.468c1.745.955 3.715 1.458 5.736 1.458h.005c6.641 0 12.034-5.391 12.034-12.033S18.216 0 12.031 0zm0 21.466c-1.802 0-3.568-.485-5.114-1.402l-.367-.218-3.799.996.999-3.704-.239-.38C2.569 15.116 2.035 13.593 2.035 12.03 2.035 6.516 6.518 2.03 12.033 2.03c2.673 0 5.187 1.042 7.078 2.934 1.89 1.892 2.932 4.406 2.932 7.081 0 5.513-4.484 9.987-9.997 9.987l-.015.034zm5.485-7.513c-.301-.151-1.779-.878-2.054-.979-.275-.101-.476-.151-.676.151-.2.301-.776.979-.952 1.18-.176.201-.352.226-.653.076-.301-.151-1.271-.469-2.42-1.498-.894-.8-1.499-1.789-1.675-2.09-.176-.301-.019-.463.131-.614.135-.135.301-.351.452-.526.151-.176.201-.301.301-.502.101-.201.05-.376-.025-.526-.075-.151-.676-1.629-.926-2.231-.243-.588-.49-.508-.676-.517-.176-.008-.376-.008-.576-.008-.2 0-.526.075-.801.376-.275.301-1.052 1.028-1.052 2.507 0 1.479 1.077 2.91 1.228 3.111.151.201 2.119 3.235 5.132 4.536 2.378 1.023 2.91 1.048 3.436 1.002.585-.051 1.779-.727 2.029-1.429.25-.702.25-1.304.176-1.429-.076-.126-.276-.202-.577-.353z" /></svg>
