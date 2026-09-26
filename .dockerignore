@@ -1,0 +1,10 @@
+# Keep host artifacts and secrets out of the image.
+# (Host node_modules would overwrite the Linux build of bcrypt.)
+**/node_modules
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+.git
+infra
+backups

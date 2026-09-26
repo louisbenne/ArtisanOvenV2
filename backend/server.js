@@ -52,9 +52,8 @@ app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOStrin
 
 // ── SPA fallback ──────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api/') && req.path !== '/health') {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
-  }
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 // ── Error handler ─────────────────────────────────────────────────────────────
