@@ -6,10 +6,9 @@ ENV NODE_ENV=production
 COPY backend/package.json backend/package-lock.json ./backend/
 RUN cd backend && npm ci --omit=dev && npm cache clean --force
 
-# Copy source — backend needs ../frontend and ../admin at runtime
+# Copy source — the backend serves ../public (v1 frontend) at runtime
 COPY backend ./backend
-COPY frontend ./frontend
-COPY admin ./admin
+COPY public ./public
 
 WORKDIR /app/backend
 USER node

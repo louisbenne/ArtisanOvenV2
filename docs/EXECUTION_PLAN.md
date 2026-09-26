@@ -64,7 +64,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 ### Stage C — Phase 1: v1's frontend, verbatim
 | # | Branch | Scope | Status |
 |---|---|---|---|
-| C1 | `phase-1-public` | v1 files → `public/` byte-identical (home page from `0c2a41c^`), v1 URLs/aliases/cache headers, `live.html` → `/`, old v2 UI → `legacy-v2-ui/`, CI byte-check script | ⬜ |
+| C1 | `phase-1-public` | v1 files → `public/` byte-identical (home page from `0c2a41c^`), v1 URLs/aliases/cache headers, `live.html` → `/`, old v2 UI → `legacy-v2-ui/`, CI byte-check script | ✅ |
 | C2 | `phase-1-fixtures-baseline` | Fixture dataset (v1 JSON + v2 seed), Playwright baseline screenshots of every v1 screen | ⬜ |
 
 ### Stage D — Backend data the v1 pages need (Phase 4 tasks 1–3, 8 pulled forward)

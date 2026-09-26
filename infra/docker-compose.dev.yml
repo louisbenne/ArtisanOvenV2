@@ -30,8 +30,7 @@ services:
     volumes:
       - ../backend:/app/backend
       - /app/backend/node_modules
-      - ../frontend:/app/frontend
-      - ../admin:/app/admin
+      - ../public:/app/public
     ports:
       - "8080:3000"
     depends_on:

@@ -54,5 +54,7 @@ without it emails are logged instead of sent.
 backend/     Express API (server.js, src/{db,domain,routes,middleware,services,sockets}, scripts/)
 infra/       docker-compose.yml (+ .dev.yml, .prod.yml), Caddyfile, backup.sh, .env
 docs/        plans, parity checklist, v1 documentation and v1 source snapshot
-frontend/ admin/   v2's interim UI — replaced by v1's files in public/ (Phase 1)
+public/      v1's frontend, byte-identical (checked by tools/check-v1-parity.js)
+legacy-v2-ui/  the interim v2 UI — not served; reference only, deleted in Phase 10
+tools/       repo checks (v1 parity)
 ```

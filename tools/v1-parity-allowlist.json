@@ -1,0 +1,4 @@
+{
+  "_comment": "Files in public/ that may differ from v1 (golden rule 1). Each entry: path → reason. public/js/** is v2-only and never compared.",
+  "allowed": {}
+}

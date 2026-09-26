@@ -11,6 +11,7 @@ const path           = require('path');
 const routes         = require('./src/routes');
 const { errorHandler } = require('./src/middleware/errorHandler');
 const { initSockets }  = require('./src/sockets');
+const { mountPublicSite } = require('./src/web/publicSite');
 
 const app    = express();
 
@@ -44,22 +45,15 @@ app.use('/api/webhooks', express.raw({ type: '*/*' }), (req, _res, next) => {
 
 app.use(express.json({ limit: '1mb' }));
 
-// ── Static files (Railway: single container serves frontend + admin) ─────────
-app.use('/admin', express.static(path.join(__dirname, '../admin')));
-app.use('/frontend', express.static(path.join(__dirname, '../frontend')));
-app.use(express.static(path.join(__dirname, '../frontend')));
-
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api', routes);
+app.use('/api', (_req, res) => res.status(404).json({ success: false, message: 'Not found.' }));
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
-// ── SPA fallback ──────────────────────────────────────────────────────────────
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
+// ── The site: v1's frontend from public/, at v1's URLs ───────────────────────
+mountPublicSite(app, path.join(__dirname, '../public'));
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 app.use(errorHandler);
