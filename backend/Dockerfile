@@ -9,6 +9,8 @@ RUN cd backend && npm ci --omit=dev && npm cache clean --force
 # Copy source — the backend serves ../public (v1 frontend) at runtime
 COPY backend ./backend
 COPY public ./public
+# TEMPORARY until Phase 5: interim admin served at /v2-admin/
+COPY legacy-v2-ui ./legacy-v2-ui
 
 WORKDIR /app/backend
 USER node

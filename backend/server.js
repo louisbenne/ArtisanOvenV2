@@ -52,6 +52,13 @@ app.use('/api', (_req, res) => res.status(404).json({ success: false, message: '
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
+// ── TEMPORARY: the interim v2 admin at /v2-admin/admin/ until v1's admin.html
+// is wired to the backend (Phase 5, F5) — then this line and legacy-v2-ui/ go.
+app.use('/v2-admin', express.static(path.join(__dirname, '../legacy-v2-ui'), {
+  setHeaders: res => res.setHeader('Cache-Control', 'no-cache'),
+}));
+app.get(['/v2-admin', '/v2-admin/'], (_req, res) => res.redirect(302, '/v2-admin/admin/login.html'));
+
 // ── The site: v1's frontend from public/, at v1's URLs ───────────────────────
 mountPublicSite(app, path.join(__dirname, '../public'));
 
