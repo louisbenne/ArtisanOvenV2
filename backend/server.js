@@ -71,6 +71,12 @@ wrapAsync(app._router.stack);
 // ── Start ─────────────────────────────────────────────────────────────────────
 // Only listen when run directly (`node server.js`); tests import { app, server }.
 if (require.main === module) {
+  // Last-resort net: a stray rejected promise outside Express (sockets, timers,
+  // fire-and-forget emails) must not take the whole site down (bugs 0, 16).
+  process.on('unhandledRejection', err => {
+    console.error(`[${new Date().toISOString()}] unhandled rejection:`, err);
+  });
+
   const PORT = parseInt(process.env.PORT || '3000', 10);
   server.listen(PORT, () => {
     console.log(`[artisan-oven] backend listening on :${PORT}`);

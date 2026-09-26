@@ -1,15 +1,14 @@
 'use strict';
 
 const sql = require('../db');
+const { bearerToken } = require('../util/tokens');
 
 // Role hierarchy — each role implicitly includes everything below it.
 const ROLE_RANK = { owner: 4, treasurer: 3, kitchen: 2, volunteer: 1 };
 
 function requireAuth(minRole = 'volunteer') {
   return async (req, res, next) => {
-    const token = req.headers['authorization']?.replace(/^Bearer\s+/, '')
-                  || req.query._token;
-
+    const token = bearerToken(req);   // Authorization header only (bug 13)
     if (!token) return res.status(401).json({ success: false, message: 'No session token.' });
 
     const [session] = await sql`

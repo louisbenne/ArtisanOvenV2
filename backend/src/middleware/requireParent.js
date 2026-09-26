@@ -5,15 +5,12 @@
 // Sets req.parent = { accessCode, discountCode }.
 
 const sql = require('../db');
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const { bearerToken } = require('../util/tokens');
 
 function requireParent() {
   return async (req, res, next) => {
-    const token = req.headers['authorization']?.replace(/^Bearer\s+/, '');
-    if (!token || !UUID.test(token)) {
-      return res.status(401).json({ success: false, message: 'Access denied.' });
-    }
+    const token = bearerToken(req);
+    if (!token) return res.status(401).json({ success: false, message: 'Access denied.' });
 
     const [session] = await sql`
       SELECT a.code, a.linked_discount_code

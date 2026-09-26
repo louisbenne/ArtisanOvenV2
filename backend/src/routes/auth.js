@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const sql    = require('../db');
 const { logAudit } = require('../services/auditService');
 const { HttpError } = require('../middleware/errorHandler');
+const { bearerToken } = require('../util/tokens');
 
 const SESSION_TTL_HOURS = 12;
 
@@ -35,7 +36,8 @@ async function adminLogin(req, res) {
 }
 
 async function adminLogout(req, res) {
-  await sql`DELETE FROM admin_sessions WHERE token = ${req.headers['authorization']?.replace(/^Bearer\s+/, '')}`;
+  const token = bearerToken(req);
+  if (token) await sql`DELETE FROM admin_sessions WHERE token = ${token}`;
   res.json({ success: true });
 }
 

@@ -6,6 +6,7 @@ const { logAudit }  = require('../services/auditService');
 const { applyDiscount } = require('../services/discountService');
 const { notifyOrder }   = require('../services/notificationService');
 const orderNumbers      = require('../domain/orderNumbers');
+const { isUuid }        = require('../util/tokens');
 
 const PRICE_PENCE  = { '12inch': 800, 'Half12inch': 500, 'Quarter12inch': 300 };
 const CAPACITY     = { '12inch': 1.0, 'Half12inch': 0.5, 'Quarter12inch': 0.25 };
@@ -200,7 +201,7 @@ async function lookup(req, res) {
   let order;
 
   // Token match (from confirmation email link) — most secure, try first.
-  if (token) {
+  if (isUuid(token)) {   // malformed tokens are ignored, not a query error
     [order] = await sql`
       SELECT o.*, c.name AS customer_name, c.email AS customer_email
       FROM   orders    o

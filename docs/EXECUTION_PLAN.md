@@ -28,6 +28,7 @@ needed. Update the status column as branches land.
 | C13 | **Bug 14 (new):** one rate-limit bucket per IP shared by every limiter, and no `trust proxy` — behind Caddy the *whole site* shared ~10 orders/min. | Fixed in B5: per-limiter buckets, `trust proxy` for private hops. |
 | C14 | **Bug 15 (new, hidden behind bug 2):** any omitted optional field (e.g. `termsAcceptedAt`) was `undefined`, which postgres.js rejects → 500. | Fixed in B5: `transform: { undefined: null }` in the DB client. |
 | C15 | `node --watch` gets no file events from a Windows folder bind-mounted into Docker. | Dev uses `npm run dev:restart` instead. |
+| C16 | **Bug 16 (new, critical):** one unauthenticated Socket.IO message with a malformed token crashed the server (uuid query error in socket auth, outside Express). Malformed bearer tokens also gave 500s. | Fixed in B10 and deployed immediately: UUID validation before any token query, socket auth try/catch, last-resort `unhandledRejection` logger. |
 
 ## 2. Branch / PR workflow
 
@@ -58,7 +59,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 | B7 | `phase-0-parent-security` | Bugs 3, 4, 5: `parent_sessions`, `requireParent`, discount `scope` (task 4) | ✅ |
 | B8 | `phase-0-aggregates` | Bugs 7, 8, 11 (task 5) | ✅ |
 | B9 | `phase-0-idempotency` | Bug 12: `orders.submission_id` (task 6) | ✅ |
-| B10 | `phase-0-header-auth` | Bug 13: token only in `Authorization` (task 7) | ⬜ |
+| B10 | `phase-0-header-auth` | Bug 13: token only in `Authorization` (task 7) | ✅ |
 
 ### Stage C — Phase 1: v1's frontend, verbatim
 | # | Branch | Scope | Status |
