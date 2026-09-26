@@ -214,6 +214,8 @@ async function create(req, res) {
     id:         result.order.id,
     orderRef:   result.order.order_ref,
     orderId:    orderNumbers.displayRef(result.order.order_ref),   // '#12' / 'E101'
+    subtotal:   subtotal / 100,
+    discount:   discount.discountPence / 100,
     total:      total / 100,
     token:      result.order.access_token,
   });

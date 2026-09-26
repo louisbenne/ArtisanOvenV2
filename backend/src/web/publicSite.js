@@ -48,11 +48,12 @@ function mountPublicSite(app, publicDir) {
     next();
   });
 
-  // v1 pages load <script src="/config.js">. In v2 the browser talks to the API
-  // through public/js/api.js (same origin), so there is nothing to configure.
+  // Every v1 page loads <script src="/config.js"> in <head>, before its own
+  // scripts. v2 answers with public/js/api.js — the browser→backend adapter —
+  // so no v1 HTML needs a new <script> tag.
   app.get('/config.js', (_req, res) => {
     res.type('application/javascript').set('Cache-Control', NO_STORE)
-       .send('/* ArtisanOven v2: same-origin API, see /js/api.js */\n');
+       .sendFile(path.join(publicDir, 'js', 'api.js'));
   });
 
   // live.html was a hand-made draft of the fully-booked page: send old links home.

@@ -1,4 +1,9 @@
 {
-  "_comment": "Files in public/ that may differ from v1 (golden rule 1). Each entry: path → reason. public/js/** is v2-only and never compared.",
-  "allowed": {}
+  "_comment": "Files in public/ that may differ from v1 (golden rule 1). public/js/** is v2-only and never compared. kind 'rewire': the ONLY change allowed is fetch( → AO_API.fetch( at v1 API call sites — checked by reversing it and comparing to v1 byte-for-byte. kind 'free': any change, needs a reason.",
+  "allowed": {
+    "script.js":        { "kind": "rewire", "reason": "getEvents banner + getOrder lookup go through public/js/api.js (Phase 2)" },
+    "events.html":      { "kind": "rewire", "reason": "getEvents goes through public/js/api.js (Phase 2)" },
+    "event-order.html": { "kind": "rewire", "reason": "registerInterest, getEvents, createEventOrder go through public/js/api.js (Phase 2)" },
+    "parent-order.js":  { "kind": "rewire", "reason": "parentAuth, createParentOrder go through public/js/api.js (Phase 2)" }
+  }
 }

@@ -15,10 +15,16 @@ const repo   = path.resolve(__dirname, '..');
 const target = process.env.TARGET || 'v1';
 const args   = process.argv.slice(2).map(a => `'${a.replace(/'/g, `'\''`)}'`).join(' ');
 
+// The dev database password: infra/.env's DB_PASS (Compose reads it too), else the dev default.
+const fs = require('fs');
+const envFile = path.join(repo, 'infra', '.env');
+const dbPass = ((fs.existsSync(envFile) && (fs.readFileSync(envFile, 'utf8').match(/^DB_PASS=(.*)$/m) || [])[1]) || '')
+  .trim() || 'devpassword';
+
 const docker = [
   'run', '--rm', '--ipc=host',
   '-v', `${repo}:/work`, '-w', '/work/e2e',
-  '-e', `TARGET=${target}`,
+  '-e', `TARGET=${target}`, '-e', `DB_PASS=${dbPass}`,
   ...(target === 'v2' ? ['--network', 'ao-dev_default'] : []),
   IMAGE, 'sh', '-c', `npm ci --silent --no-audit --no-fund && npx playwright test ${args}`,
 ];

@@ -294,7 +294,7 @@
           }, 15000);
         }
 
-        const res = await fetch(url.toString(), {
+        const res = await AO_API.fetch(url.toString(), {
           method: "GET",
           mode: "cors",
           redirect: "follow",

@@ -419,7 +419,7 @@ function initOrderEventsBanner() {
   url.searchParams.set("action", "getEvents");
   url.searchParams.set("_t", Date.now().toString());
 
-  fetch(url.toString(), {
+  AO_API.fetch(url.toString(), {
     method: "GET",
     mode: "cors",
     redirect: "follow"
@@ -518,7 +518,7 @@ function initOrderLookup() {
 
       let response;
       try {
-        response = await fetch(url.toString(), fetchOpts);
+        response = await AO_API.fetch(url.toString(), fetchOpts);
       } finally {
         if (timeoutId) clearTimeout(timeoutId);
       }

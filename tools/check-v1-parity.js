@@ -34,10 +34,17 @@ const problems = [];
 const sourceFor = rel => (rel === 'index.html' ? path.join(V1EXTRA, 'index.html') : path.join(V1, rel));
 
 for (const rel of walk(PUBLIC)) {
-  if (rel.startsWith('js/') || allowed[rel]) continue;
+  if (rel.startsWith('js/')) continue;
+  const rule = allowed[rel];
+  if (rule && rule.kind === 'free') continue;
   const src = sourceFor(rel);
+  let served = fs.readFileSync(path.join(PUBLIC, rel));
+  // 'rewire': undo the one sanctioned edit — the result must be v1 exactly.
+  if (rule && rule.kind === 'rewire') {
+    served = Buffer.from(served.toString('latin1').split('AO_API.fetch(').join('fetch('), 'latin1');
+  }
   if (!fs.existsSync(src)) problems.push(`not in v1: public/${rel}`);
-  else if (!fs.readFileSync(src).equals(fs.readFileSync(path.join(PUBLIC, rel)))) {
+  else if (!fs.readFileSync(src).equals(served)) {
     problems.push(`differs from v1: public/${rel} (add to tools/v1-parity-allowlist.json only if the change is sanctioned)`);
   }
 }

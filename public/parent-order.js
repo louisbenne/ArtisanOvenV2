@@ -203,7 +203,7 @@
       url.searchParams.set('action', 'parentAuth');
       url.searchParams.set('code', code);
 
-      const response = await fetch(url.toString(), { method: 'GET', mode: 'cors' });
+      const response = await AO_API.fetch(url.toString(), { method: 'GET', mode: 'cors' });
       const data = await response.json();
 
       if (!data || !data.success || !data.token) {
@@ -286,7 +286,7 @@
         if (value !== undefined && value !== null) url.searchParams.set(key, value);
       });
 
-      const response = await fetch(url.toString(), { method: 'GET', mode: 'cors' });
+      const response = await AO_API.fetch(url.toString(), { method: 'GET', mode: 'cors' });
       const data = await response.json();
 
       if (!data || !data.success) {

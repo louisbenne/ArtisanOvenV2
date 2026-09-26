@@ -80,7 +80,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 ### Stage E — Phase 2 + 3: public site on v2
 | # | Branch | Scope | Status |
 |---|---|---|---|
-| E1 | `phase-2-api-js` | `public/js/api.js` (v1-shaped), rewire fetch call sites only, legacy `Payment.html?order=&token=` links | ⬜ |
+| E1 | `phase-2-api-js` | `public/js/api.js` (v1-shaped), rewire fetch call sites only, legacy `Payment.html?order=&token=` links | ✅ |
 | E2 | `phase-2-sold-out` | §4A sold-out mode + 5 tests | ⬜ |
 | E3 | `phase-3-order-form` | Native lunch form from v1 classes (replaces Google Form iframe) | ⬜ |
 

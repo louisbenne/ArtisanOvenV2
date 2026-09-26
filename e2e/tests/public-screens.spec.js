@@ -5,9 +5,12 @@
 // Admin + kitchen screens are added with Phase 5 (their API shapes are ported then).
 
 const { test, expect } = require('@playwright/test');
-const { mockV1 } = require('../support/mock-v1');
+const { mockV1, stubThirdParty } = require('../support/mock-v1');
+const { getStatus } = require('../fixtures/v1-api');
 const { tokens } = require('../fixtures/data');
 const { PARENT_ACCESS_CODE } = require('../fixtures/v1-api');
+
+test.afterAll(async () => { if (TARGET === 'v2') await require('../fixtures/seed-v2').close(); });
 
 const TARGET = process.env.TARGET || 'v1';
 const NOW = new Date('2026-10-01T10:00:00+01:00');   // Thursday, ordering week
@@ -15,6 +18,15 @@ const NOW = new Date('2026-10-01T10:00:00+01:00');   // Thursday, ordering week
 async function open(page, url, { scenario = 'open' } = {}) {
   await page.clock.setFixedTime(NOW);
   if (TARGET === 'v1') await mockV1(page, { scenario });
+  if (TARGET === 'v2') {
+    await stubThirdParty(page);
+    await require('../fixtures/seed-v2').seed();   // real backend, canonical data
+    // Status scenarios other than 'open' are states of the week (deadline, sold
+    // out); the backend's status logic is covered by its own tests.
+    if (scenario !== 'open') {
+      await page.route('**/api/status**', r => r.fulfill({ json: getStatus(scenario) }));
+    }
+  }
   await page.goto(url);
   await settle(page);
 }
@@ -22,6 +34,11 @@ async function open(page, url, { scenario = 'open' } = {}) {
 async function settle(page) {
   await page.waitForLoadState('networkidle');
   await page.evaluate(() => document.fonts.ready);
+  // Some v1 flows smooth-scroll to a result; sticky/fixed elements then depend on
+  // where the scroll happened to be. Screenshot from the top, once scrolling stops.
+  await page.waitForTimeout(600);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await page.waitForFunction(() => window.scrollY === 0);
 }
 
 const shot = (page, name) => expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });

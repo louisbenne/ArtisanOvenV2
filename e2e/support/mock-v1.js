@@ -25,7 +25,12 @@ async function mockV1(page, { scenario = 'open' } = {}) {
   await page.route('https://v1-api.mock/**', async route => route.fulfill(json(respond(await paramsOf(route.request()), scenario))));
   await page.route('https://script.google.com/**', async route => route.fulfill(json(respond(await paramsOf(route.request()), scenario))));
   await page.route('**/api/status**', route => route.fulfill(json(getStatus(scenario))));
+  await stubThirdParty(page);
+}
+
+// Third-party frames (the Google Form) render differently from run to run.
+async function stubThirdParty(page) {
   await page.route('https://docs.google.com/**', route => route.fulfill({ status: 200, contentType: 'text/html', body: GOOGLE_FORM_STUB }));
 }
 
-module.exports = { mockV1 };
+module.exports = { mockV1, stubThirdParty };

@@ -519,7 +519,7 @@
                   throw new Error("API endpoint not configured.");
                 }
 
-                const res = await fetch(apiUrl, {
+                const res = await AO_API.fetch(apiUrl, {
                   method: "POST",
                   mode: "cors",
                   headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -603,7 +603,7 @@
       // Concurrently fetch remote events to keep updated
       const apiUrl = (typeof ORDER_API_URL !== 'undefined') ? ORDER_API_URL : (window.ORDER_API_URL || "");
       if (apiUrl && apiUrl !== "PASTE_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE") {
-        fetch(`${apiUrl}?action=getEvents&_t=${Date.now()}`, { mode: "cors", cache: "no-store" })
+        AO_API.fetch(`${apiUrl}?action=getEvents&_t=${Date.now()}`, { mode: "cors", cache: "no-store" })
           .then(res => res.json())
           .then(data => {
             if (data && data.success && Array.isArray(data.events)) {
@@ -791,7 +791,7 @@
             throw new Error("API endpoint not configured.");
           }
 
-          const res = await fetch(apiUrl, {
+          const res = await AO_API.fetch(apiUrl, {
             method: "POST",
             mode: "cors",
             headers: { "Content-Type": "text/plain;charset=utf-8" },

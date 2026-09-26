@@ -12,7 +12,8 @@ const TARGET = process.env.TARGET || 'v1';
 module.exports = defineConfig({
   testDir: './tests',
   snapshotPathTemplate: '{testDir}/../__screenshots__/v1/{arg}-{projectName}{ext}',
-  fullyParallel: true,
+  fullyParallel: TARGET === 'v1',
+  workers: TARGET === 'v1' ? undefined : 1,   // v2: one shared database, reseeded per test
   retries: 0,
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'report' }]],
   expect: {
