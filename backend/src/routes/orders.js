@@ -48,18 +48,17 @@ async function create(req, res) {
     if (!PRICE_PENCE[normalizeSize(item.size)]) throw new HttpError(400, `Invalid pizza size: ${item.size}`);
   }
 
-  // Idempotency check: reject if this submissionId was seen in the last 10 minutes.
-  if (submissionId) {
-    const [dupe] = await sql`
-      SELECT id, order_ref FROM orders
-      WHERE  notes LIKE ${`%sub:${submissionId}%`}
-        AND  created_at > now() - interval '10 minutes'
-    `;
-    if (dupe) {
-      return res.json({ success: true, duplicate: true, id: dupe.id, orderRef: dupe.order_ref,
-                        orderId: orderNumbers.displayRef(dupe.order_ref) });
-    }
-  }
+  // Idempotency: a repeated submissionId (double-click, retry after a timeout)
+  // returns the original order instead of creating a second one.
+  const findDuplicate = async () => submissionId && (await sql`
+    SELECT id, order_ref, total_pence, access_token FROM orders WHERE submission_id = ${submissionId}
+  `)[0];
+  const sendDuplicate = dupe => res.json({
+    success: true, duplicate: true, id: dupe.id, orderRef: dupe.order_ref,
+    orderId: orderNumbers.displayRef(dupe.order_ref), total: dupe.total_pence / 100, token: dupe.access_token,
+  });
+  const earlier = await findDuplicate();
+  if (earlier) return sendDuplicate(earlier);
 
   const subtotal = items.reduce((s, i) => s + PRICE_PENCE[normalizeSize(i.size)], 0);
   const discount = discountCode
@@ -129,13 +128,12 @@ async function create(req, res) {
       INSERT INTO orders (
         order_number, order_ref, order_type, session_id, event_id, customer_id,
         subtotal_pence, discount_code, discount_pence, total_pence,
-        payment_method, allergy_flag, allergy_notes, notes, terms_accepted_at
+        payment_method, allergy_flag, allergy_notes, notes, terms_accepted_at, submission_id
       ) VALUES (
         ${orderNumber}, ${orderRef}, ${orderType}, ${sessionId}, ${eventId ?? null}, ${customer.id},
         ${subtotal}, ${discount.code ?? null}, ${discount.discountPence}, ${total},
         ${paymentMethod ?? null}, ${!!allergyFlag}, ${allergyNotes ?? null},
-        ${[notes, submissionId ? `sub:${submissionId}` : null].filter(Boolean).join(' | ') || null},
-        ${termsAcceptedAt}
+        ${notes || null}, ${termsAcceptedAt}, ${submissionId || null}
       )
       RETURNING *
     `;
@@ -151,7 +149,16 @@ async function create(req, res) {
     }
 
     return { order, customerId: customer.id };
+  }).catch(async err => {
+    // Two identical submissions raced past the check above: the unique
+    // constraint picked a winner (this transaction rolled back, so no capacity
+    // or number was used). Return the winner.
+    if (err.code === '23505' && err.constraint_name === 'orders_submission_id_key') {
+      return { duplicate: await findDuplicate() };
+    }
+    throw err;
   });
+  if (result.duplicate) return sendDuplicate(result.duplicate);
 
   // Notify asynchronously (don't block the response on email/WhatsApp delivery).
   notifyOrder('order_confirmation', result.order.id).catch(console.error);
