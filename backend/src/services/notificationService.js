@@ -6,11 +6,12 @@
 
 const https    = require('https');
 const sql      = require('../db');
+const { displayRef } = require('../domain/orderNumbers');
 
 async function notifyOrder(template, orderId) {
   const [order] = await sql`
     SELECT
-      o.id, o.public_order_code, o.order_type, o.total_pence, o.discount_pence,
+      o.id, o.order_ref, o.order_type, o.total_pence, o.discount_pence,
       o.discount_code, o.payment_method, o.access_token, o.allergy_notes,
       c.name  AS customer_name,
       c.email AS customer_email,
@@ -21,6 +22,7 @@ async function notifyOrder(template, orderId) {
     WHERE o.id = ${orderId}
   `;
   if (!order) return;
+  order.display_ref = displayRef(order.order_ref);   // '#12' / 'E101'
 
   const items = await sql`
     SELECT size, topping, child_name, child_class, unit_price_pence
@@ -80,16 +82,16 @@ function getTransporter() {
 
 function emailSubject(template, order) {
   const titles = {
-    order_confirmation:   `Your order is confirmed — ${order.public_order_code} · Artisan Oven`,
-    payment_reminder:     `Friendly payment reminder — ${order.public_order_code} · Artisan Oven`,
-    ready_for_collection: `Your pizza is ready! — ${order.public_order_code} · Artisan Oven`,
+    order_confirmation:   `Your order is confirmed — ${order.display_ref} · Artisan Oven`,
+    payment_reminder:     `Friendly payment reminder — ${order.display_ref} · Artisan Oven`,
+    ready_for_collection: `Your pizza is ready! — ${order.display_ref} · Artisan Oven`,
   };
-  return titles[template] || `Artisan Oven — ${order.public_order_code}`;
+  return titles[template] || `Artisan Oven — ${order.display_ref}`;
 }
 
 function emailHtml(template, order, items) {
   const BASE   = process.env.FRONTEND_URL || 'https://artisanoven.shop';
-  const viewLink = `${BASE}/payment.html?q=${order.public_order_code}&token=${order.access_token}`;
+  const viewLink = `${BASE}/payment.html?q=${encodeURIComponent(order.order_ref)}&token=${order.access_token}`;
   const SIZE_LABEL = { '12inch': 'Whole 12"', 'Half12inch': 'Half 12"', 'Quarter12inch': 'Quarter 12"' };
 
   const itemRows = items.map(i =>
@@ -131,7 +133,7 @@ function emailHtml(template, order, items) {
     </div>
     <div style="padding:32px">
       ${body}
-      <p><strong>Order ${escHtml(order.public_order_code)}</strong></p>
+      <p><strong>Order ${escHtml(order.display_ref)}</strong></p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:.9em">
         <thead>
           <tr style="background:#f5f2ee">
@@ -207,7 +209,7 @@ async function sendWhatsApp({ order, items, template }) {
 
 function whatsappText(template, order, items) {
   const BASE = process.env.FRONTEND_URL || 'https://artisanoven.shop';
-  const link = `${BASE}/payment.html?q=${order.public_order_code}`;
+  const link = `${BASE}/payment.html?q=${encodeURIComponent(order.order_ref)}`;
   const SIZE_SHORT = { '12inch': 'Whole', 'Half12inch': 'Half', 'Quarter12inch': 'Quarter' };
 
   const itemLines = items.map(i =>
@@ -216,14 +218,14 @@ function whatsappText(template, order, items) {
 
   const msgs = {
     order_confirmation:
-      `Hi ${order.customer_name}! 👋\n\nYour Artisan Oven order *${order.public_order_code}* is confirmed:\n\n${itemLines}\n\nTotal: £${(order.total_pence/100).toFixed(2)}\n\nView & pay: ${link}`,
+      `Hi ${order.customer_name}! 👋\n\nYour Artisan Oven order *${order.display_ref}* is confirmed:\n\n${itemLines}\n\nTotal: £${(order.total_pence/100).toFixed(2)}\n\nView & pay: ${link}`,
     payment_reminder:
-      `Hi ${order.customer_name} — friendly reminder that your Artisan Oven order *${order.public_order_code}* (£${(order.total_pence/100).toFixed(2)}) still has an outstanding balance.\n\nPay cash at collection or visit: ${link}`,
+      `Hi ${order.customer_name} — friendly reminder that your Artisan Oven order *${order.display_ref}* (£${(order.total_pence/100).toFixed(2)}) still has an outstanding balance.\n\nPay cash at collection or visit: ${link}`,
     ready_for_collection:
-      `Hi ${order.customer_name}! 🍕 Your pizza from Artisan Oven is ready to collect. Quote *${order.public_order_code}* at the counter.`,
+      `Hi ${order.customer_name}! 🍕 Your pizza from Artisan Oven is ready to collect. Quote *${order.display_ref}* at the counter.`,
   };
 
-  return msgs[template] || `Artisan Oven — update on your order ${order.public_order_code}: ${link}`;
+  return msgs[template] || `Artisan Oven — update on your order ${order.display_ref}: ${link}`;
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────

@@ -88,4 +88,24 @@ function lunchOrder(overrides = {}) {
   };
 }
 
-module.exports = { resetDb, startApp, createSession, lunchOrder };
+async function createEvent(sql, { name = 'Summer Fair', status = 'Open' } = {}) {
+  const [e] = await sql`
+    INSERT INTO events (name, event_date, status) VALUES (${name}, CURRENT_DATE + 30, ${status})
+    RETURNING *`;
+  return e;
+}
+
+// Creates an admin with the given role and logs in → headers for app.api().
+async function loginAs(app, sql, role = 'owner') {
+  const bcrypt = require('bcrypt');
+  const username = `test-${role}`;
+  await sql`
+    INSERT INTO admin_users (username, password_hash, role)
+    VALUES (${username}, ${await bcrypt.hash('pw', 4)}, ${role})
+    ON CONFLICT (username) DO NOTHING`;
+  const res = await app.api('POST', '/api/admin/login', { username, password: 'pw' });
+  if (!res.body.token) throw new Error(`login failed: ${JSON.stringify(res.body)}`);
+  return { authorization: `Bearer ${res.body.token}` };
+}
+
+module.exports = { resetDb, startApp, createSession, createEvent, lunchOrder, loginAs };

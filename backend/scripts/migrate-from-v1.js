@@ -10,6 +10,11 @@
  * Run AFTER the v2 schema has been migrated (npm run migrate).
  */
 
+// This importer assumes CSV columns v1 never had (bug 10) and the pre-002 order
+// codes. It is rewritten for real v1 workbook exports in Phase 7.
+console.error('migrate-from-v1.js is disabled until Phase 7 (see docs/V2_MASTER_PLAN.md).');
+process.exit(1);
+
 const fs   = require('fs');
 const path = require('path');
 const sql  = require('../src/db');

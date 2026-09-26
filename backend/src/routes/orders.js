@@ -5,6 +5,7 @@ const { HttpError } = require('../middleware/errorHandler');
 const { logAudit }  = require('../services/auditService');
 const { applyDiscount } = require('../services/discountService');
 const { notifyOrder }   = require('../services/notificationService');
+const orderNumbers      = require('../domain/orderNumbers');
 
 const PRICE_PENCE  = { '12inch': 800, 'Half12inch': 500, 'Quarter12inch': 300 };
 const CAPACITY     = { '12inch': 1.0, 'Half12inch': 0.5, 'Quarter12inch': 0.25 };
@@ -46,11 +47,14 @@ async function create(req, res) {
   // Idempotency check: reject if this submissionId was seen in the last 10 minutes.
   if (submissionId) {
     const [dupe] = await sql`
-      SELECT id, public_order_code FROM orders
+      SELECT id, order_ref FROM orders
       WHERE  notes LIKE ${`%sub:${submissionId}%`}
         AND  created_at > now() - interval '10 minutes'
     `;
-    if (dupe) return res.json({ success: true, duplicate: true, orderId: dupe.public_order_code });
+    if (dupe) {
+      return res.json({ success: true, duplicate: true, id: dupe.id, orderRef: dupe.order_ref,
+                        orderId: orderNumbers.displayRef(dupe.order_ref) });
+    }
   }
 
   const subtotal = items.reduce((s, i) => s + PRICE_PENCE[normalizeSize(i.size)], 0);
@@ -111,24 +115,17 @@ async function create(req, res) {
       RETURNING id
     `;
 
-    // 3. Allocate order code atomically.
-    const prefix = { lunch: 'L', event: 'E', parent: 'P' }[orderType];
-    const [counter] = await sql`
-      UPDATE order_code_counters
-      SET    next_val = next_val + 1
-      WHERE  order_type = ${orderType}
-      RETURNING next_val - 1 AS val
-    `;
-    const publicCode = `${prefix}-${String(counter.val).padStart(4,'0')}`;
+    // 3. Allocate the v1-style number (lunch: under the session row lock above).
+    const { orderNumber, orderRef } = await orderNumbers.allocate(sql, orderType, sessionId);
 
     // 4. Insert order.
     const [order] = await sql`
       INSERT INTO orders (
-        public_order_code, order_type, session_id, event_id, customer_id,
+        order_number, order_ref, order_type, session_id, event_id, customer_id,
         subtotal_pence, discount_code, discount_pence, total_pence,
         payment_method, allergy_flag, allergy_notes, notes, terms_accepted_at
       ) VALUES (
-        ${publicCode}, ${orderType}, ${sessionId}, ${eventId ?? null}, ${customer.id},
+        ${orderNumber}, ${orderRef}, ${orderType}, ${sessionId}, ${eventId ?? null}, ${customer.id},
         ${subtotal}, ${discount.code ?? null}, ${discount.discountPence}, ${total},
         ${paymentMethod ?? null}, ${!!allergyFlag}, ${allergyNotes ?? null},
         ${[notes, submissionId ? `sub:${submissionId}` : null].filter(Boolean).join(' | ') || null},
@@ -157,7 +154,8 @@ async function create(req, res) {
   const io = req.app.get('io');
   if (io) {
     io.broadcastOrderUpdate('order:new', {
-      orderId:   result.order.public_order_code,
+      id:        result.order.id,
+      orderRef:  result.order.order_ref,
       orderType: result.order.order_type,
       sessionId: result.order.session_id,
     });
@@ -165,7 +163,9 @@ async function create(req, res) {
 
   res.status(201).json({
     success:    true,
-    orderId:    result.order.public_order_code,
+    id:         result.order.id,
+    orderRef:   result.order.order_ref,
+    orderId:    orderNumbers.displayRef(result.order.order_ref),   // '#12' / 'E101'
     total:      total / 100,
     token:      result.order.access_token,
   });
@@ -197,17 +197,30 @@ async function lookup(req, res) {
     `;
   }
 
-  // Email or order code match.
-  if (!order) {
+  // Order number: '12' / '#12' searches the CURRENT session only (as v1 did — its
+  // weekly reset deleted old rows); 'E101' is unique forever. Otherwise: email.
+  const ref = orderNumbers.parseRef(q);
+  if (!order && ref?.kind === 'lunch') {
     [order] = await sql`
       SELECT o.*, c.name AS customer_name, c.email AS customer_email
       FROM   orders    o
       JOIN   customers c ON c.id = o.customer_id
-      WHERE  (
-        lower(c.email) = ${q.toLowerCase()}
-        OR upper(o.public_order_code) = ${q.toUpperCase()}
-      )
-      AND NOT o.is_deleted
+      JOIN   ordering_sessions s ON s.id = o.session_id AND s.archived_at IS NULL
+      WHERE  o.order_type = 'lunch' AND o.order_ref = ${ref.ref} AND NOT o.is_deleted
+    `;
+  } else if (!order && ref?.kind === 'e') {
+    [order] = await sql`
+      SELECT o.*, c.name AS customer_name, c.email AS customer_email
+      FROM   orders    o
+      JOIN   customers c ON c.id = o.customer_id
+      WHERE  o.order_type IN ('event', 'parent') AND o.order_ref = ${ref.ref} AND NOT o.is_deleted
+    `;
+  } else if (!order) {
+    [order] = await sql`
+      SELECT o.*, c.name AS customer_name, c.email AS customer_email
+      FROM   orders    o
+      JOIN   customers c ON c.id = o.customer_id
+      WHERE  lower(c.email) = ${q.trim().toLowerCase()} AND NOT o.is_deleted
       ORDER BY o.created_at DESC
       LIMIT 1
     `;
@@ -226,7 +239,10 @@ async function lookup(req, res) {
   res.json({
     success: true,
     order: {
-      orderId:         order.public_order_code,
+      id:              order.id,
+      orderRef:        order.order_ref,
+      orderId:         orderNumbers.displayRef(order.order_ref),
+      orderType:       order.order_type,
       customerName:    order.customer_name,
       customerEmail:   order.customer_email,
       items:           items.map(i => ({
@@ -255,7 +271,7 @@ async function adminList(req, res) {
 
   const rows = await sql`
     SELECT
-      o.id, o.public_order_code, o.order_type, o.session_id, o.event_id,
+      o.id, o.order_number, o.order_ref, o.order_type, o.session_id, o.event_id,
       o.subtotal_pence, o.discount_code, o.discount_pence, o.total_pence,
       o.payment_method, o.payment_status, o.allergy_flag, o.is_deleted,
       o.created_at, o.updated_at,
@@ -274,7 +290,7 @@ async function adminList(req, res) {
       AND  (${search     ?? null} IS NULL OR (
              lower(c.name)  LIKE ${'%' + (search || '').toLowerCase() + '%'}
           OR lower(c.email) LIKE ${'%' + (search || '').toLowerCase() + '%'}
-          OR lower(o.public_order_code) LIKE ${'%' + (search || '').toLowerCase() + '%'}
+          OR lower(o.order_ref) LIKE ${'%' + (search || '').toLowerCase() + '%'}
       ))
     GROUP BY o.id, c.id
     ORDER BY o.created_at DESC
@@ -296,7 +312,7 @@ async function adminUpdate(req, res) {
   updates.updated_at = new Date();
 
   const [order] = await sql`
-    UPDATE orders SET ${sql(updates)} WHERE id = ${id} RETURNING public_order_code
+    UPDATE orders SET ${sql(updates)} WHERE id = ${id} RETURNING id
   `;
   if (!order) throw new HttpError(404, 'Order not found.');
 
@@ -311,7 +327,7 @@ async function adminDelete(req, res) {
   const [order] = await sql`
     UPDATE orders SET is_deleted = TRUE, updated_at = now()
     WHERE id = ${id} AND NOT is_deleted
-    RETURNING public_order_code
+    RETURNING id
   `;
   if (!order) throw new HttpError(404, 'Order not found.');
 

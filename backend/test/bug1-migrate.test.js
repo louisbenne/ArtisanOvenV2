@@ -32,11 +32,11 @@ test('the migrate CLI (what the container runs on boot) exits 0 five times in a 
 
 test('a pre-migrations database (tables exist, no schema_migrations) is adopted cleanly', async () => {
   const sql = await resetDb();
-  await sql`DROP TABLE schema_migrations`;
+  await sql.unsafe('DROP SCHEMA public CASCADE; CREATE SCHEMA public');
   const init = fs.readFileSync(path.join(__dirname, '../src/db/migrations/001_init.sql'), 'utf8');
-  await sql.unsafe(init);                      // simulate the old schema.sql having run
+  await sql.unsafe(init);                      // the old schema.sql had run, nothing else
   const applied = await migrate(sql);
-  assert.equal(applied[0], '001_init.sql');
+  assert.deepEqual(applied, migrationFiles()); // 001 adopted, later ones applied
 });
 
 test('concurrent migrate runs (two containers booting) do not collide', async () => {

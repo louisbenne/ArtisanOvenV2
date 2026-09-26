@@ -7,12 +7,13 @@ const { incrementUsage } = require('../services/discountService');
 
 // ── Record a payment or refund ────────────────────────────────────────────────
 async function recordPayment(req, res) {
-  const { orderId: orderCode, amountPence, method, reference, note } = req.body;
-  if (!orderCode || amountPence === undefined) throw new HttpError(400, 'orderId and amountPence required.');
+  // orderId = internal orders.id (admin routes never use display numbers — plan §4B)
+  const { orderId: rawId, amountPence, method, reference, note } = req.body;
+  if (!rawId || amountPence === undefined) throw new HttpError(400, 'orderId and amountPence required.');
 
   const [order] = await sql`
     SELECT id, total_pence, discount_code FROM orders
-    WHERE public_order_code = ${orderCode} AND NOT is_deleted
+    WHERE id = ${parseInt(rawId, 10) || 0} AND NOT is_deleted
   `;
   if (!order) throw new HttpError(404, 'Order not found.');
 
@@ -84,7 +85,7 @@ async function summary(req, res) {
   // Outstanding balance (unpaid/partial), oldest first — aging report.
   const outstanding = await sql`
     SELECT
-      o.id, o.public_order_code, o.order_type, o.total_pence, o.payment_status,
+      o.id, o.order_ref, o.order_type, o.total_pence, o.payment_status,
       COALESCE(SUM(p.amount_pence),0)::INTEGER AS paid_pence,
       c.name AS customer_name, c.email AS customer_email,
       now()::DATE - o.created_at::DATE AS days_since_order
@@ -109,7 +110,7 @@ async function exportCsv(req, res) {
 
   const rows = await sql`
     SELECT
-      o.public_order_code   AS "Order Code",
+      o.order_ref           AS "Order",
       o.order_type          AS "Type",
       c.name                AS "Customer",
       c.email               AS "Email",

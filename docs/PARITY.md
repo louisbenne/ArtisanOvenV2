@@ -18,7 +18,7 @@ changes a row.** Legend: ✅ works · ⚠️ partial/buggy · ❌ missing/broken
 | `getVersion` | `GET /api/version` | ❌ | P4 |
 | Discount code on lunch form | `POST /api/discounts/check` | ❌ (page calls missing route) | P4 |
 | **Sold-out mode:** home page automatically becomes the fully-booked page (§4A) | `/` serves `fully-booked.html` while sold out; `/order.html` redirects to `/` | ❌ (v1 did this by hand on 23 Sept) | P1, P2, P4 |
-| **Order numbers like v1** (§4B): lunch `#N` restarting weekly, shared `E101` counter for events + parents | `domain/orderNumbers.js` | ❌ v2 uses `L-0001` / `E-0001` / `P-0001` | P0 |
+| **Order numbers like v1** (§4B): lunch `#N` restarting weekly, shared `E101` counter for events + parents | `domain/orderNumbers.js` | ✅ | P0 |
 
 ### Admin & kitchen
 
