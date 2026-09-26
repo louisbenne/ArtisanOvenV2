@@ -105,6 +105,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ pushed (awaiting merge) · 🟩 merg
 
 ## 4. Path to production
 
+0. **26 Sept:** staging (Funnel URL) runs v1's public pages on the v2 backend (`phase-2-staging-admin`); interim admin at `/v2-admin/`.
 1. **Now → end of Stage B:** live stack on this PC keeps running at the Funnel URL
    (staging). Every restart is safe from A0 onward.
 2. **Stage C–E:** staging URL shows v1's exact public pages running on v2. Team can
