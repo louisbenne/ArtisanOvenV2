@@ -61,7 +61,7 @@ app.use(errorHandler);
 
 // Wrap async route handlers automatically so they don't need try/catch.
 // Must be called after all routes are registered.
-wrapAsync(app);
+wrapAsync(app._router.stack);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -70,8 +70,11 @@ server.listen(PORT, () => {
 });
 
 // ── Utility: auto-wrap async route handlers ───────────────────────────────────
-function wrapAsync(app) {
-  for (const layer of app._router?.stack || []) {
+// Takes a layer stack (app._router.stack, or a Router's own .stack) and recurses
+// into mounted Routers. Without this, a rejected handler promise is unhandled and
+// Node exits the whole process.
+function wrapAsync(stack) {
+  for (const layer of stack) {
     if (layer.route) {
       for (const rl of layer.route.stack) {
         if (rl.handle?.constructor?.name === 'AsyncFunction') {
@@ -79,8 +82,8 @@ function wrapAsync(app) {
           rl.handle = (req, res, next) => orig(req, res, next).catch(next);
         }
       }
-    } else if (layer.handle?.stack) {
-      wrapAsync(layer.handle);
+    } else if (Array.isArray(layer.handle?.stack)) {
+      wrapAsync(layer.handle.stack);
     }
   }
 }
